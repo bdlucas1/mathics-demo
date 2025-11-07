@@ -1,0 +1,220 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font: 12pt sans-serif;
+}
+
+#browser-front-end, #shell-front-end {
+
+    width: 35em;
+    padding: 1.5em;
+
+    display: flex;
+    flex-direction: column;
+    gap: 2em;
+}
+
+.m-pair {
+
+    --border-color: #dddddd;
+
+    border-left: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color);
+    padding-left: 1em;
+    padding-top: 1em;
+    
+    position: relative; /* anchor for .m-number */
+    overflow: visible;  /* allow .m-number to spill out */
+
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    
+    font: 10pt menlo, consolas, 'DejaVu Sans Mono', monospace;
+
+    .m-input {
+        border: none;
+        outline: none;
+        white-space: pre;
+        /* why is this needed? */
+        font: inherit;
+    }
+    
+    .m-input::placeholder {
+        font: 12pt sans-serif;
+    }
+
+    .m-number {
+        position: absolute;
+        top: 0;
+        right: 0;
+        transform: translate(50%, -50%);
+        z-index: 1;
+
+        padding-left: 0.5em;
+        padding-right: 0.5em;
+        color: #888888;
+        font: 10pt sans-serif;
+        background-color: white;
+        border: 1px solid var(--border-color);
+        border-radius: 9999px;
+    }
+    
+    .m-output {
+        /*
+        .MathJax {
+            font-size: 11pt;
+        }
+       */
+    }
+}
+
+.m-manipulate {
+
+    width: min-content;
+    background-color: #f8f8f8;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    padding: 12px;
+    padding-bottom: 20px;
+
+    /* target of manipulate */
+    & > :first-child {
+        padding: 0.5em;
+        background-color: white;
+        border: 1px solid #cccccc;
+        border-radius: 3px;
+
+    }
+
+    /* box containing sliders */
+    .m-sliders {
+        
+        padding-top: 30px;
+        overflow: visible;
+
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        grid-row-gap: 20px;
+        grid-column-gap: 10px;
+    
+        /* slider label and value readout */
+        * {
+            white-space: nowrap;
+            font: 11pt sans-serif;
+        }
+
+        --slider-track-color: #cccccc;
+        --slider-handle-width: 12px;
+        --slider-handle-height: 24px;
+        --slider-handle-radius: 4px;
+        --slider-handle-border: 1px solid #999999;
+
+        /* ipywidgets slider tweaks */
+        .widget-hslider {
+
+            /* slider parts are grandchildren of .m-sliders, so move them up a level */
+            display: contents;
+
+            .widget-label {
+                height: fit-content;
+                width: fit-content;
+                min-width: fit-content;
+            }
+
+            .slider-container {
+                .noUi-connects {
+                    background-color: var(--slider-track-color);
+                }
+                .noUi-handle {
+                    border: var(--slider-handle-border);
+                    width: var(--slider-handle-width);
+                    height: var(--slider-handle-height);
+                    border-radius: var(--slider-handle-radius);
+                    margin-top: -4px; /* TODO: calc? */
+                }
+            }
+
+            .widget-readout {
+                height: fit-content;
+                width: fit-content;
+                min-width: fit-content;
+                box-shadow: none;
+            }
+
+        }
+        
+
+        /* dash sliders */
+        .m-slider {
+            padding: 0 !important;
+            .rc-slider-track {
+                background-color: var(--slider-track-color);
+            }
+            .rc-slider-rail {
+                background-color: var(--slider-track-color);
+            }
+            .rc-slider-handle {
+                background-color: white;
+                border: var(--slider-handle-border);
+                width: var(--slider-handle-width);
+                height: var(--slider-handle-height);
+                border-radius: var(--slider-handle-radius);
+                margin-top: -10px; /* TODO: calc? */
+            }
+        }
+    }
+}
+
+.m-row, .m-grid {
+
+    /* stupid css trick to make the baseline of a plot in a row be its vertical center
+       so that it is centered vertically relative to other content.
+       TODO: the translate is ugly; look into whether there's a cleaner way to do this. */
+    & > .m-plot {
+        transform: translateY(-50%);
+    }
+    & > .m-plot::before {
+        display: inline-block;
+        content: "";
+        width: 0;
+        height: 50%; /* baseline = bottom of this inline-block */
+    }
+
+    align-items: baseline;
+}
+
+.m-grid {
+    /* TODO: demo hack - should be controlled by user,
+       and everybody should stick to their boxes, but
+       that's not currently the case. */
+    grid-row-gap: 1em;
+    grid-column-gap: 1em;
+}
+
+.m-row {
+    display: flex;
+    flex-direction: row;
+    width: max-content;
+}
+
+.m-grid {
+
+    display: grid;
+    justify-items: center;
+    width: max-content;
+
+    > * {
+        /* rows and columns as assigned when elements were generated by layout */
+        grid-column: var(--col);
+        grid-row: var(--row);
+    }
+}
+
+
+
