@@ -28,6 +28,12 @@ TUES NOV 11
 * how to test
     * maybe monkey-patch "evaluate" to be "compile and run" and re-use existing tests
 
+#### other pull requests for high-level sanity review by Rocky (not complete or ready to submit upstream)
+* https://github.com/bdlucas1/mathics-core/pull/7: to_sympy in If to support If in plotting expressions
+* https://github.com/bdlucas1/mathics-core/pull/8: make SympyExpression iterable to support Hypergeometric in plotting
+* TBD: utilities for printing mathics expressions and sympy expressions as indented trees
+* TBD: timer utility
+
 #### layout
 * architecture ok?
 * analgous to format, but data structure instead of string
