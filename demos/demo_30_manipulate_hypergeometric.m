@@ -7,6 +7,7 @@
 Manipulate[
     Plot3D[
         HypergeometricPFQ[{a}, {b}, (x + I y)^2], {x, -2, 2}, {y, -2, 2},
+        (*Hypergeometric1F1[a, b, (x + I y)^2], {x, -2, 2}, {y, -2, 2},*)
         PlotPoints -> {200,200}, PlotRange -> {Automatic, Automatic, {-5,14}},
         ColorFunction->"rainbow", PlotLegends->BarLegend["rainbow"]
     ],

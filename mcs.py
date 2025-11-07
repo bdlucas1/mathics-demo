@@ -24,6 +24,8 @@ from mathics.session import MathicsSession, Evaluation
 from mathics.core.builtin import Builtin
 from mathics.core.load_builtin import add_builtins
 
+from mathics.core.convert.sympy import expression_to_sympy, SympyExpression
+
 #
 # where to find these?
 #
