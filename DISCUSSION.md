@@ -40,27 +40,27 @@ TUES NOV 11
 * how to use in shell front-end
 * need browser front-end given jupyter?
 
-### Graphics3D
+#### Graphics3D
 * need GraphicsComplex for performance, but support across the board?
     * with NumpyArrayListExpr or NumericArray?
 * boxing currently not standard
 * needs considerable build-out itself
 * how to test
 
-### Plot3D
+#### Plot3D
 * needs considerable build-out
 * how to test
 * deploy unconditionally or conditionally
     * former requires support across the board
 
-### ComplexPlot3D, etc
+#### ComplexPlot3D, etc
 * identify others that uses Graphics3D and build out
 
-### Graphics (2d)
+#### Graphics (2d)
 * GraphicsComplex needed?
 * support across the board?
 
-### Manipulate
+#### Manipulate
 * non-standard ManipulateBox vs DynamicModule, Dymanic, Dynamic*Box, etc.
 * other functions like Animate?
 
