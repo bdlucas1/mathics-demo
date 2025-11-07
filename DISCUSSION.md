@@ -28,7 +28,7 @@ TUES NOV 11
 * how to test
     * maybe monkey-patch "evaluate" to be "compile and run" and re-use existing tests
 
-### layout
+#### layout
 * architecture ok?
 * analgous to format, but data structure instead of string
     * any value to merging with format?
