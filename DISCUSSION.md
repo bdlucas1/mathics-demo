@@ -1,48 +1,44 @@
-=== collaboration
-Bruce will make PR with DISCUSSION.txt or md and make it a PR against my fork for discussion
-Bruce will make PR for NumericArray for discussion
+#### collaboration
+* Bruce will make PR with DISCUSSION.txt or md and make it a PR against my fork for discussion
+* Bruce will make PR for NumericArray for discussion
 
-=== demo
-Bruce will quickly run through demos to make sure we're on same page
-quick tour of demo code, maybe
+#### demo
+* Bruce will quickly run through demos to make sure we're on same page
+* quick tour of demo code, maybe
 
-=== NumericArrayListExpr
-dead end, abandon in favor of NumericArray
+#### NumericArrayListExpr
+* dead end, abandon in favor of NumericArray
 
-=== TUES NOV 11 ===
+---
+TUES NOV 11
 
-### NumericArray
+#### NumericArray
 
 * Codex impl is at https://chatgpt.com/codex/tasks/task_e_6909b81266188330b5b22bac0b27c272 - a couple questions there are useful general info for Bruce, so let's take a look
 * Ditto https://github.com/bdlucas1/mathics-core/tree/codex/implement-mathematica-numericarray-with-numpy
 * NumericArray trial balloon: https://github.com/bdlucas1/mathics-core/pull/3 - Bruce thinks this is the right direction, but need high-level review for sanity of overall organization from Rocky
 * Note: GraphicsComplex[3D] using NumericArray is nonstandard afaics, but seems perfectly reasonable
 * Consumers of Graphics3D will need to be updated to understand GraphicsComplex and NumericArray
-** external - front-ends
-** internal - boxing, formatting
-** can we add a global switch to enable the new impl (default off) to ease transition? where?
+    * external - front-ends
+    * internal - boxing, formatting
+    * can we add a global switch to enable the new impl (default off) to ease transition? where?
 
+#### compile
+* as per email abandoning writing own compiler directly from Mathics to Python. Instead will use to_sympy and sympy.lambdify.
+* how to test
+    * maybe monkey-patch "evaluate" to be "compile and run" and re-use existing tests
 
-=== compile
-good direction? by email: maybe for plotting only? but would we really want two compiler implementations?
-AST vs code string?
-    pro: avoids Little Bobby Tables issues
-    con: maybe not completely stable?
-who? Bruce? Rocky?
-how to test
-    maybe monkey-patch "evaluate" to be "compile and run"
-
-=== layout
-architecture ok?
-analgous to format, but data structure instead of string
-    any value to merging with format?
-dash vs ipywidgets
-repository organization
-    how to reuse across front-ends
-how to package front-ends
-jupyter/jupyterlite packaging - kernel
-how to use in shell front-end
-need browser front-end given jupyter?
+### layout
+* architecture ok?
+* analgous to format, but data structure instead of string
+    * any value to merging with format?
+* dash vs ipywidgets
+* repository organization
+    * how to reuse across front-ends
+* how to package front-ends
+* jupyter/jupyterlite packaging - kernel
+* how to use in shell front-end
+* need browser front-end given jupyter?
 
 === Graphics3D
 need GraphicsComplex for performance, but support across the board?
