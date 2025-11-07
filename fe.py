@@ -71,38 +71,6 @@ if args.demo:
 if args.run:
     run[args.run] = [read_demo(s) for s in run[args.run]]
 
-# load a url into a browser, using either:
-# webview - pop up new standalone window using pywebview
-# webbrowser - instruct system browser to open a new window
-class Browser():
-
-    def __init__(self):
-        self.n = 0
-
-    def show(self, url):
-        # display a browser window that fetches the current plot
-        #print("showing", url)
-        if args.browser == "webview":
-            offset = 50 * self.n
-            self.n += 1
-            webview.create_window(url, url, x=100+offset, y=100+offset, width=600, height=800)
-        elif args.browser == "webbrowser":
-            webbrowser.open_new(url)
-
-    def start(self):
-        if args.browser == "webview":
-            # webview needs to run on main thread :( and blocks, so we start other things on their own thread
-            # webview needs a window before we can call start() :(, so we make a hidden one
-            # real windows will be provided later
-            webview.create_window("hidden", hidden=True)
-            webview.start()
-            """
-        elif args.browser == "webbrowser":
-            time.sleep(1e6)
-        """
-
-    #atexit.register(start)
-
 # hack alert
 if "ipy" in mode.use:
     import fe_ipy as fe

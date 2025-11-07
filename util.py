@@ -3,6 +3,8 @@ import sys
 import time
 import traceback
 import urllib.parse
+import webbrowser
+import webview
 
 import mcs
 
@@ -39,16 +41,29 @@ def print_exc_reversed(exc_info=None, file=None):
 
 
 #
-# pretty print expr
+# print expr as a tree
 #
 
-def prt(expr, indent=1):
+def prt_expr_tree(expr, indent=1):
     if not hasattr(expr, "elements"):
         print("  " * indent + str(expr))
     else:
         print("  " * indent + str(expr.head))
         for elt in expr.elements:
-            prt(elt, indent + 1)
+            prt_expr_tree(elt, indent + 1)
+
+def prt_sympy_tree(expr, indent=""):
+    if expr.args:
+        print(f"{indent}{expr.func.__name__}")
+        for i, arg in enumerate(expr.args):
+            prt_sympy_tree(arg, indent + "    ")
+    else:
+        print(f"{indent}{expr.func.__name__}({str(expr)})")
+
+
+#
+#
+#
 
 class Timer:
 
@@ -127,10 +142,32 @@ def get_rule_values(expr):
 #
 #
 
-def print_sympy_tree(expr, indent=""):
-    if expr.args:
-        print(f"{indent}{expr.func.__name__}")
-        for i, arg in enumerate(expr.args):
-            print_sympy_tree(arg, indent + "    ")
-    else:
-        print(f"{indent}{expr.func.__name__}({str(expr)})")
+# load a url into a browser, using either:
+# webview - pop up new standalone window using pywebview
+# webbrowser - instruct system browser to open a new window
+class Browser():
+
+    def __init__(self):
+        self.n = 0
+        self.browser = os.getenv("DEMO_BROWSER", "webview")
+
+    def show(self, url):
+        # display a browser window that fetches the current plot
+        #print("showing", url)
+        if self.browser == "webview":
+            offset = 50 * self.n
+            self.n += 1
+            webview.create_window(url, url, x=100+offset, y=100+offset, width=600, height=800)
+        elif self.browser == "webbrowser":
+            webbrowser.open_new(url)
+
+    def start(self):
+
+        if self.browser == "webview":
+            # webview needs to run on main thread :( and blocks, so we start other things on their own thread
+            # webview needs a window before we can call start() :(, so we make a hidden one
+            # real windows will be provided later
+            webview.create_window("hidden", hidden=True)
+            webview.start()
+
+

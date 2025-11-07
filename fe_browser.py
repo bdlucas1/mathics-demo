@@ -1,4 +1,5 @@
 import dash
+import sys
 import threading
 import traceback
 import util
@@ -11,17 +12,19 @@ import mode # really just need mode_dash
 # common to ShellFrontEnd and BrowserFrontEnd
 class DashFrontEnd:
 
-    def __init__(self):
-
+    # TODO: maybe remove jupyter flag as we are using ipywidgets, not dash in jupyter
+    def __init__(self, jupyter=False):
 
         # create app, set options
         self.app = dash.Dash(__name__, suppress_callback_exceptions=True)
         self.app.enable_dev_tools(debug = mode.debug, dev_tools_silence_routes_logging = True) #not args.debug)
+        self.jupyter = jupyter
 
         # TODO: I think this condition is always true now
-        if args.fe != "jupyter":
+        if not self.jupyter:
             # start server on its own thread, allowing something else to run on main thread
-            # pass it self.app.server which is a Flask WSGI compliant app so could be hooked to any WSGI compliant server
+            # pass it self.app.server which is a Flask WSGI compliant app so could be hooked to
+            # any WSGI compliant server
             # make_server picks a free port because we passed 0 as port number
             self.server = werkzeug.serving.make_server("127.0.0.1", 0, self.app.server)
             threading.Thread(target = self.server.serve_forever).start()
@@ -32,76 +35,6 @@ class DashFrontEnd:
 
         # register pattern-matching callbacks for dymanically generated content, used by all front ends
         mode.register_callbacks(self.app)
-
-
-# read expressions from terminal, display results in a browser winddow
-class ShellFrontEnd(DashFrontEnd):
-
-    def __init__(self):
-
-        # initialize app and start server
-        super().__init__()
-
-        # map from plot names to plot layouts, one per plot
-        self.plots = {}
-
-        # initial layout is empty save for a Location component
-        # which causes the desired plot to be displayed as detailed below
-        self.app.layout = dash.html.Div([dash.dcc.Location(id="url")], id="shell-front-end")
-
-        # to display plot x browser is instructed to fetch url with path /plotx 
-        # when browser fetches /plotx, it is served the initial (empty) layout defined above
-        # then the dcc.Location component in that layout triggers this callback,
-        # which receives the path /plotx of the loaded url
-        # and updates the shell-front-end div of the initial (empty) layout with the actual layout for /plotx
-        @self.app.callback(
-            dash.Output("shell-front-end", "children"), # we update the shell-front-end layout with the layout for plot x
-            dash.Input("url", "pathname")            # we receive the url path /plotx
-        )
-        def layout_for_path(path):
-            # returning this value updates shell-front-end div with layout for plotx
-            return self.plots[path[1:]]
-
-        def handle_input(s):
-
-            layout = None
-
-            with util.Timer(f"total parse+eval+layout"):
-                try:
-                    expr = self.session.parse(s)
-                    if expr:
-                        expr = expr.evaluate(self.session.evaluation)
-                        layout = lt.expression_to_layout(self, expr)
-                except Exception as e:
-                    if True: #args.run == "dev" or mode.debug:
-                        traceback.print_exc()
-                    else:
-                        print("ERROR:", e)
-
-            # graphicical output, if any
-            if layout:
-                plot_name = f"plot{len(self.plots)}"
-                self.plots[plot_name] = layout
-                url = f"http://127.0.0.1:{self.server.server_port}/{plot_name}"
-                browser.show(url)
-                text_output = "--Graphics--"
-            else:
-                text_output = str(expr)
-            print(f"\noutput> {text_output}")
-
-        # demos, tests, etc.
-        if args.run:
-            for s in run[args.run]:
-                print("input> ", s)
-                handle_input(s)
-                print("")
-
-        # REPL loop
-        while True:
-            print("input> ", end="")
-            s = input()
-            handle_input(s)
-            print("")
 
 
 # accept expressions from an input field, display expressions in an output box
@@ -115,7 +48,8 @@ class BrowserFrontEnd(DashFrontEnd):
         # initial layout is --run input plus a blank pair
         self.pair_number = 0
         self.top_id ="browser-front-end"
-        init_pairs = [self.pair(input, self.process_input(input)) for input in run[args.run]] if args.run else []
+        init_input = [open(fn).read() for fn in sys.argv[1:]]
+        init_pairs = [self.pair(s, self.process_input(s)) for s in init_input]
         self.app.layout = dash.html.Div([*init_pairs, self.pair()], id=self.top_id)
 
         # when the hidden pair-button is "clicked", process the pair-in input and update the pair-out div
@@ -142,7 +76,7 @@ class BrowserFrontEnd(DashFrontEnd):
             raise dash.exceptions.PreventUpdate
             
         # point a browser at our page
-        if args.fe == "jupyter":
+        if self.jupyter:
             self.app.run(jupyter_mode="inline")
         else:
             url = f"http://127.0.0.1:{self.server.server_port}"
@@ -188,7 +122,13 @@ class BrowserFrontEnd(DashFrontEnd):
         # TODO: can we get rid of hidden button by making tweak_pair more sophisticated?
         instructions = "Type expression followed by shift-enter"
         layout = dash.html.Div([
-            dash.dcc.Textarea(id=in_id, value=input.strip(), placeholder=instructions, spellCheck=False, className="m-input"),
+            dash.dcc.Textarea(
+                id=in_id,
+                value=input.strip(),
+                placeholder=instructions,
+                spellCheck=False,
+                className="m-input"
+            ),
             dash.html.Button(id=button_id, hidden=True),
             dash.html.Div(output, id=out_id, className="m-output"),
             dash.html.Div(str(self.pair_number), className="m-number"),
@@ -200,3 +140,9 @@ class BrowserFrontEnd(DashFrontEnd):
         ], id=pair_id, className="m-pair")
 
         return layout
+
+if __name__ == "__main__":
+
+    browser = util.Browser()
+    threading.Thread(target = BrowserFrontEnd).start()
+    browser.start()

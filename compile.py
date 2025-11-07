@@ -30,8 +30,8 @@ def compile(evaluation, functions, names):
             print("xxx leaf", sp.func, type(sp.func), sp.func.__name__, str(sp))
     #fix(sp)
 
-    print("=== expr"); util.prt(functions)
-    print("=== sympy", type(sympy_expr)); util.print_sympy_tree(sympy_expr)
+    print("=== expr"); util.prt_expr_tree(functions)
+    print("=== sympy", type(sympy_expr)); util.prt_sympy_tree(sympy_expr)
 
     # ask sympy to generate a function that will evaluate the expr
     # use numpy to do the evaluation so that operations are vectorized

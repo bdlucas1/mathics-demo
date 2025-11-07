@@ -131,7 +131,7 @@ def expression_to_layout(fe, expr):
     Given an expression, box it if necessary, and compute a layout
     """
 
-    #print("xxx before boxing:"); util.prt(expr)
+    #print("xxx before boxing:"); util.prt_expr_tree(expr)
 
     # TODO: is this a hack? is it needed?
     if str(getattr(expr, "head", None)).endswith("Box"):
@@ -140,7 +140,7 @@ def expression_to_layout(fe, expr):
         form = mcs.SymbolTraditionalForm
         boxed = mcs.Expression(mcs.Symbol("System`ToBoxes"), expr, form).evaluate(fe.session.evaluation)
 
-    #print("after boxing:"); util.prt(boxed)
+    #print("after boxing:"); util.prt_expr_tree(boxed)
 
     # compute a layout, which will either be a string containing latex,
     # or an object representing an html layout
