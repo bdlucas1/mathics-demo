@@ -4,14 +4,6 @@ import scipy
 import mcs
 import util
 
-# needed to make to_sympy/lambdify for HypergeometricPFQ work
-# as it passes a SympyExpression for the list args into sympy.hyper
-# which expects it to be iterable; if not it throws a TypeError
-# which we catch and silently ignore and return a bad result for to_sympy
-# monkey patch in for now
-# TODO: submit pull request
-mcs.SympyExpression.__iter__ = lambda self: iter(self.args)
-
 def hyppfq(p, q, x):
     if len(p) == 1 and len(q) == 1:
         return scipy.special.hyp1f1(p[0], q[0], x)
@@ -26,14 +18,14 @@ additional_mappings = {
 
 def compile(evaluation, functions, names):
 
-    #print("=== compiling expr"); util.prt_expr_tree(functions)
+    print("=== compiling expr"); util.prt_expr_tree(functions)
 
     # obtain sympy expr and strip context from free symbols
     sympy_expr = functions.to_sympy()
     subs = {sym: sympy.Symbol(mcs.strip_context(str(sym))) for sym in sympy_expr.free_symbols}
     sympy_expr = sympy_expr.subs(subs)
 
-    #print("=== compiled sympy", type(sympy_expr)); util.prt_sympy_tree(sympy_expr)
+    print("=== compiled sympy", type(sympy_expr)); util.prt_sympy_tree(sympy_expr)
 
     # ask sympy to generate a function that will evaluate the expr
     # use numpy to do the evaluation so that operations are vectorized
