@@ -29,11 +29,14 @@ TUES NOV 11
 * how to test
     * maybe monkey-patch "evaluate" to be "compile and run" and re-use existing tests
 
-#### other pull requests for high-level sanity review by Rocky (not complete or ready to submit upstream)
+#### upcoming PRs
+* beef up tests for Plot3D to check structure of Graphics3D output, in preparation for following
+* refactoring of eval_Plot3D without change of function, in preparation for following
+* addition of option for eval_Plot3D to generate Graphics3D with GraphicsComplex and NumericArray
 * https://github.com/bdlucas1/mathics-core/pull/7: to_sympy in If to support If in plotting expressions
 * https://github.com/bdlucas1/mathics-core/pull/8: make SympyExpression iterable to support Hypergeometric in plotting
-* TBD: utilities for printing mathics expressions and sympy expressions as indented trees
-* TBD: timer utility
+* utilities for printing mathics expressions and sympy expressions as indented trees
+* timer utility
 
 #### layout
 * architecture ok?
