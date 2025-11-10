@@ -17,6 +17,7 @@ TUES NOV 11
 * Codex impl is at https://chatgpt.com/codex/tasks/task_e_6909b81266188330b5b22bac0b27c272 - a couple questions there are useful general info for Bruce, so let's take a look
 * Ditto https://github.com/bdlucas1/mathics-core/tree/codex/implement-mathematica-numericarray-with-numpy
 * NumericArray trial balloon: https://github.com/bdlucas1/mathics-core/pull/3 - Bruce thinks this is the right direction, but need high-level review for sanity of overall organization from Rocky
+* PR https://github.com/Mathics3/mathics-core/pull/1512/files
 * Note: GraphicsComplex[3D] using NumericArray is nonstandard afaics, but seems perfectly reasonable
 * Consumers of Graphics3D will need to be updated to understand GraphicsComplex and NumericArray
     * external - front-ends
