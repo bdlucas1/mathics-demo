@@ -1,0 +1,10 @@
+Manipulate[
+    Plot3D[
+        Sin[x]*Cos[y],
+        {x,0,xmax},
+        {y,0,ymax},
+        PlotPoints->{200,200}
+    ],
+    {{xmax,1},0,10,0.1},
+    {{ymax,1},0,10,0.1}
+]

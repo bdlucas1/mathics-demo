@@ -392,8 +392,8 @@ class GraphicsConsumer:
             pass
         self.options = Options()
 
-        # xxx why not provided
-        self.options.showscale = True
+        # TODO: these are not being passed through
+        self.options.showscale = False
         self.options.colorscale = "viridis"
 
         def want_list(value, n=self.dim):
