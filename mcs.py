@@ -16,7 +16,12 @@ from mathics.core.attributes import A_HOLD_FIRST, A_PROTECTED, A_HOLD_ALL
 from mathics.builtin.box.graphics import LineBox
 from mathics.builtin.box.expression import BoxExpression
 
-from mathics.core.atoms import Integer, Real, Complex, String, NumericArray
+try:
+    from mathics.core.atoms import NumericArray
+except:
+    pass
+
+from mathics.core.atoms import Integer, Real, Complex, String
 from mathics.core.list import ListExpression
 from mathics.core.expression import Expression
 from mathics.session import MathicsSession, Evaluation
@@ -41,6 +46,9 @@ SymbolBarLegend = Symbol("Global`BarLegend") # TODO: move to System
 SymbolImageSize = Symbol("System`ImageSize")
 SymbolAspectRatio = Symbol("System`AspectRatio")
 
+SymbolVertexColors = Symbol("System`VertexColors")
+SymbolRGBColor = Symbol("System`RGBColor")
+
 SymbolManipulate = Symbol("System`Manipulate") # TODO: move to System
 SymbolManipulateBox = Symbol("System`ManipulateBox") # TODO: move to System
 SymbolGraphics3D = Symbol("System`Graphics3D")
@@ -52,6 +60,7 @@ SymbolLine = Symbol("System`Line")
 SymbolPoint = Symbol("System`Point")
 SymbolPointBox = Symbol("System`PointBox")
 SymbolPolygon = Symbol("System`Polygon")
+SymbolPolygonBox = Symbol("System`PolygonBox")
 SymbolPolygon3DBox = Symbol("System`Polygon3DBox")
 SymbolLineBox = Symbol("System`LineBox")
 SymbolLine3DBox = Symbol("System`Line3DBox")

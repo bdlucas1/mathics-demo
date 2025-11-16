@@ -1,9 +1,6 @@
 import os
 import sys
 
-# install our plot
-import plot
-
 debug = os.getenv("DEMO_DEBUG", False)
 
 

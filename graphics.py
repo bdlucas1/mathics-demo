@@ -318,9 +318,187 @@ def layout_Graphics3DBox(fe, expr):
     layout = mode.graph(figure, options.height)
     return layout
 
+
+#
+#
+#
+
+from mathics.core.symbols import (
+    SymbolList,
+    Symbol,
+)    
+from mathics.core.systemsymbols import (
+    SymbolGraphics,
+    SymbolGraphics3D,
+    SymbolGraphicsComplex,
+    SymbolPolygon,
+    SymbolRule,
+    SymbolAutomatic,
+)
+SymbolGraphics3DBox = Symbol("Graphics3DBox")
+SymbolGraphicsBox = Symbol("GraphicsBox")
+SymbolGraphicsComplexBox = Symbol("GraphicsComplexBox")
+SymbolPolygonBox = Symbol("PolygonBox")
+SymbolImageSize = Symbol("ImageSize")
+SymbolAxes = Symbol("Axes")
+
+from mathics.core.atoms import NumericArray
+
+import os
+
+from typing import Optional
+
+class GraphicsConsumer:
+
+    vertices: Optional[list] = None
+
+    def emit(self, kind, value):
+        yield kind, self.vertices, value
+
+    def process_array(self, array):
+        if isinstance(array, NumericArray):
+            return array.value
+        else:
+            raise ValueError(f"array type is {type(array)}")
+
+    def process(self, expr):
+        if expr.head == SymbolList:
+            for e in expr:
+                yield from self.process(e)
+        elif expr.head in (SymbolGraphicsComplex, SymbolGraphicsComplexBox):
+            self.vertices = self.process_array(expr.elements[0])
+            for e in expr.elements[1:]:
+                yield from self.process(e)
+            self.vertices = None
+        elif expr.head in (SymbolPolygon, SymbolPolygonBox):
+            poly = expr.elements[0]
+            if isinstance(poly, NumericArray):
+                yield from self.emit(SymbolPolygon, poly.value)
+            else:
+                raise ValueError("poly type {type(poly)}")
+        else:
+            raise ValueError(f"unknown {expr}")
+
+    def __init__(self, expr):
+        assert expr.head in (SymbolGraphics, SymbolGraphics3D, SymbolGraphicsBox, SymbolGraphics3DBox)
+
+        self.dim = 3 if expr.head in (SymbolGraphics3D, SymbolGraphics3DBox) else 2
+        self.expr = expr
+        self.vertices = None
+        self.graphics = expr.elements[0]
+
+        # collect options
+        class Options:
+            pass
+        self.options = Options()
+
+        # xxx why not provided
+        self.options.showscale = True
+        self.options.colorscale = "viridis"
+
+        def want_list(value, n=self.dim):
+            if isinstance(value, list):
+                assert len(value) == self.dim
+                value = [None if v == "System`Automatic" else v for v in value]
+            else:
+                value = [value] * n
+            return value
+
+        # TODO: move to core
+        SymbolAspectRatio = Symbol("AspectRatio")
+        SymbolAxesStyle = Symbol("AxesStyle")
+        SymbolBackground = Symbol("Background")
+        SymbolBoxRatios = Symbol("BoxRatios")
+        SymbolImageSize = Symbol("ImageSize")
+        SymbolLabelStyle = Symbol("LabelStyle")
+        SymbolLighting = Symbol("Lighting")
+        SymbolPlotRange = Symbol("PlotRange")
+        SymbolPlotRangePadding = Symbol("PlotRangePadding")
+        SymbolTicksStyle = Symbol("TicksStyle")
+        SymbolViewPoint = Symbol("ViewPoint")
+
+        for rule in expr.elements[1:]:
+            assert rule.head == SymbolRule
+            name = rule.elements[0]
+            value = rule.elements[1].to_python()
+            if value == "System`Automatic":
+                value = None
+            if name == SymbolAxes:
+                value = want_list(value)
+                # TODO: assume bool or Automatic are only options
+                value = [v if isinstance(v,bool) else True for v in value]
+                self.options.axes = value
+            elif name == SymbolAspectRatio:
+                assert isinstance(value, (int,float))
+                # TODO use 
+            elif name == SymbolImageSize:
+                if value is None:
+                    value = (300, 300)
+                else:
+                    value = want_list(value, 2)
+                    assert isinstance(value[0], (int,float))
+                self.options.width, self.options.height = value
+            elif name == SymbolPlotRange:
+                # TODO: what is the meaning in Graphics? and why is original value not passed through?
+                value = want_list(value)
+                self.options.x_range, self.options.y_range, self.options.z_range = value
+            elif name in (
+                    SymbolAxesStyle, SymbolBackground, SymbolBoxRatios, SymbolLabelStyle,
+                    SymbolLighting, SymbolPlotRangePadding, SymbolTicksStyle, SymbolViewPoint,
+                    
+            ):
+                pass
+                # TODO: use
+            else:
+                raise ValueError(f"unknown rule {name}")
+
+
+    def items(self):
+        yield from self.process(self.graphics)
+
+def layout_Graphics3DBox(fe, expr):
+
+    graphics = GraphicsConsumer(expr)
+
+
+    for i, (kind, vertices, value) in enumerate(graphics.items()):
+
+        if i > 0:
+            raise NotImplemented("> 1 graphics items")
+
+        if kind is SymbolPolygon:
+
+            with util.Timer("triangulate"):
+                ijks = []
+                ngon = value.shape[1]
+                for i in range(1, ngon-1):
+                    inx = [0, i, i+1]
+                    tris = value[:, inx]
+                    ijks.extend(tris)
+                ijks = np.array(ijks)
+                ijks -= 1
+
+            figure = mode.plot3d(vertices, ijks, [], [], graphics.options)
+            layout = mode.graph(figure, graphics.options.height)
+
+            return layout
+
+
+
+        else:
+            raise NotImplemented(f"{kind}")
+
+
+
+#
+#
+#
+
+
 layout_funs = {
     mcs.SymbolManipulateBox: layout_ManipulateBox,
     mcs.SymbolGraphicsBox: layout_GraphicsBox,
     mcs.SymbolGraphics3DBox: layout_Graphics3DBox,
 }
+
 
