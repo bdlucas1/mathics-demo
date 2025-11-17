@@ -157,16 +157,21 @@ import os
 
 from typing import Optional
 
-Waiting = collections.namedtuple("Waiting", ["kind", "vertices", "value"])
-
 # where possible things are converted to np.ndarray
 #   (not possible e.g. in lists of items, which may be non-homogeneous)
 # indexes are converted from 1-based to 0-based TODO not yet
+# where possible, lists of items are coalesced by kind
+
+Waiting = collections.namedtuple("Waiting", ["kind", "vertices", "value"])
 
 class GraphicsConsumer:
 
+    # if None, we are not in a GraphicsComplex, and a coordinate is a list of xy[z]
+    # if not None, we are in a GraphicsComplex, and a coordinate is an integer index into vertices
     vertices: Optional[list] = None
-    waiting = Waiting(None,None,None)
+
+    # this coalesces consecutive items of the same kind
+    waiting = Waiting(None, None, None)
 
     def process_array(self, array):
         if isinstance(array, NumericArray):
@@ -200,6 +205,10 @@ class GraphicsConsumer:
             #print("setting self.waiting to", kind, type(self.vertices), type(value))
             self.waiting = Waiting(kind, self.vertices, value)
 
+    def flush(self):
+        if self.waiting.kind is not None:
+            yield self.waiting
+
     def process(self, expr):
 
         if expr.head == SymbolList:
@@ -212,6 +221,7 @@ class GraphicsConsumer:
             for e in expr.elements[1:]:
                 yield from self.process(e)
             self.vertices = None
+            yield from self.flush()
 
         elif expr.head in (SymbolPolygon, SymbolPolygonBox, SymbolPolygon3DBox):
             yield from self.item(SymbolPolygon, expr.elements[0], wanted_depth=3)
@@ -311,8 +321,7 @@ class GraphicsConsumer:
         yield from self.process(self.graphics)
 
         # flush anything still waiting
-        if self.waiting.kind is not None:
-            yield self.waiting
+        yield from self.flush()
 
 def layout_GraphicsXBox(fe, expr, dim):
 
