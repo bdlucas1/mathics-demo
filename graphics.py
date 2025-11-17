@@ -311,12 +311,14 @@ def layout_GraphicsBox(fe, expr):
     return layout
 
 # dim=3, mode.plot3d
+"""
 def layout_Graphics3DBox(fe, expr):
     options = process_options(fe, expr, dim=3)
     xyzs, ijks, lines, points = collect_graphics(expr)
     figure = mode.plot3d(xyzs, ijks, lines, points, options)
     layout = mode.graph(figure, options.height)
     return layout
+"""
 
 
 #
@@ -334,13 +336,20 @@ from mathics.core.systemsymbols import (
     SymbolPolygon,
     SymbolRule,
     SymbolAutomatic,
+    SymbolLine,
+    SymbolPoint,
 )
+from mathics.core.expression import Expression
 SymbolGraphics3DBox = Symbol("Graphics3DBox")
 SymbolGraphicsBox = Symbol("GraphicsBox")
 SymbolGraphicsComplexBox = Symbol("GraphicsComplexBox")
 SymbolPolygonBox = Symbol("PolygonBox")
+SymbolLineBox = Symbol("LineBox")
+SymbolPointBox = Symbol("PointBox")
 SymbolImageSize = Symbol("ImageSize")
 SymbolAxes = Symbol("Axes")
+SymbolHue = Symbol("Hue")
+
 
 from mathics.core.atoms import NumericArray
 
@@ -376,6 +385,19 @@ class GraphicsConsumer:
                 yield from self.emit(SymbolPolygon, poly.value)
             else:
                 raise ValueError("poly type {type(poly)}")
+        elif expr.head in (SymbolLine, SymbolLineBox):
+            lines = expr.elements[0]
+            if isinstance(lines, NumericArray):
+                yield from self.emit(SymbolLine, lines.value)
+            elif isinstance(lines, Expression):
+                lines = lines.value
+                lines = np.array(lines)
+                yield from self.emit(SymbolLine, lines)
+        elif expr.head in (SymbolPoint, SymbolPointBox):
+            points = expr.elements[0]
+            yield from self.emit(SymbolPoint, np.array(points.value))
+        elif expr.head == SymbolHue:
+            print("xxx skpping", expr.head, " for now")
         else:
             raise ValueError(f"unknown {expr}")
 
@@ -441,7 +463,11 @@ class GraphicsConsumer:
             elif name == SymbolPlotRange:
                 # TODO: what is the meaning in Graphics? and why is original value not passed through?
                 value = want_list(value)
-                self.options.x_range, self.options.y_range, self.options.z_range = value
+                # TODO ugh, don't unpack
+                if self.dim == 3:
+                    self.options.x_range, self.options.y_range, self.options.z_range = value
+                else:
+                    self.options.x_range, self.options.y_range = value
             elif name in (
                     SymbolAxesStyle, SymbolBackground, SymbolBoxRatios, SymbolLabelStyle,
                     SymbolLighting, SymbolPlotRangePadding, SymbolTicksStyle, SymbolViewPoint,
@@ -450,16 +476,18 @@ class GraphicsConsumer:
                 pass
                 # TODO: use
             else:
-                raise ValueError(f"unknown rule {name}")
-
+                #raise ValueError(f"unknown rule {name}")
+                print(f"unknown rule {name}")
+            
 
     def items(self):
         yield from self.process(self.graphics)
 
-def layout_Graphics3DBox(fe, expr):
+def layout_GraphicsXBox(fe, expr, dim):
 
     graphics = GraphicsConsumer(expr)
 
+    thing = mode.Thing(dim, graphics.options)
 
     for i, (kind, vertices, value) in enumerate(graphics.items()):
 
@@ -478,26 +506,47 @@ def layout_Graphics3DBox(fe, expr):
                 ijks = np.array(ijks)
                 ijks -= 1
 
-            figure = mode.plot3d(vertices, ijks, [], [], graphics.options)
-            layout = mode.graph(figure, graphics.options.height)
+            #figure = mode.plot3d(vertices, ijks, [], [], graphics.options)
+            #layout = mode.graph(figure, graphics.options.height)
+            #return layout
 
-            return layout
+            thing.add_mesh(vertices, ijks)
 
+        elif kind is SymbolLine:
 
+            thing.add_lines(vertices, value)
+
+        elif kind is SymbolPoint:
+            thing.add_points(vertices, np.array(value))
 
         else:
-            raise NotImplemented(f"{kind}")
+            raise NotImplementedError(f"{kind}")
 
+        
 
+        figure = thing.figure()
+        layout = mode.graph(figure, graphics.options.height)
+        return layout
 
 #
 #
 #
+
+def layout_GraphicsBox(*args):
+    return layout_GraphicsXBox(dim=2, *args)
+
+def layout_Graphics3DBox(*args):
+    return layout_GraphicsXBox(dim=3, *args)    
 
 
 layout_funs = {
     mcs.SymbolManipulateBox: layout_ManipulateBox,
+
+    # NEXT  NEXT  NEXT  NEXT  NEXT  NEXT  NEXT 
+    # TODO: layout_GraphicsXBox
     mcs.SymbolGraphicsBox: layout_GraphicsBox,
+
+
     mcs.SymbolGraphics3DBox: layout_Graphics3DBox,
 }
 

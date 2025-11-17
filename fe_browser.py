@@ -52,7 +52,8 @@ class BrowserFrontEnd(DashFrontEnd):
         for fn in sys.argv[1:]:
             print("===", fn)
             s = open(fn).read()
-            pair = self.process_input(s)
+            output = self.process_input(s)
+            pair = self.pair(s, output)
             init_pairs.append(pair)
         self.app.layout = dash.html.Div([*init_pairs, self.pair()], id=self.top_id)
 
