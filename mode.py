@@ -51,10 +51,6 @@ if "plotly" in use:
     use_plot = "plotly"
 elif "matplotlib" in use:
     use_plot = "matplotlib"
-if use_plot == "plotly":
-    from mode_plotly import *
-elif use_plot == "matplotlib":
-    from mode_matplotlib import *
 
 # in jupyterlite install requirements
 # TODO: this would require an async function for it to be called from

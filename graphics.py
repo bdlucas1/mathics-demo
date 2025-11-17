@@ -16,6 +16,7 @@ import layout as lt
 import mcs
 import mode
 import util
+import render
 
 #
 # Manipulate builtin
@@ -112,88 +113,6 @@ def layout_ManipulateBox(fe, manipulate_expr):
     return layout
 
 
-#
-# collect options from a Graphics or Graphics3D element
-# TODO: see Graphics[3D]Box._prepare_elements
-#
-
-def process_options(fe, expr, dim):
-
-    # process options
-    # TODO: defaults come from get_option_values - eliminate these?
-    options = mode.Options(
-        x_range = None,
-        y_range = None,
-        z_range = None,
-        axes = True,
-        showscale = False,
-        colorscale = "viridis",
-        width = 400,
-        height = 350,
-    )
-
-    graphics_options = expr.get_option_values(expr.elements[1:])
-    if graphics_options:
-        graphics_options = ((mcs.Symbol(k), v.to_python()) for k, v in graphics_options.items())
-    else:
-        # TODO: non-boxed case - remove when we go fully boxed?
-        graphics_options = util.get_rule_values(expr)
-
-    # get_option_values supplies default values
-    # TODO: see get_option_values impl - there may be some value in passing in an evaluation here
-    for sym, value in graphics_options:
-
-        #sym = mcs.Symbol(sym) # TODO or change the below to strings
-        #value = value.to_python()
-
-        # TODO: why are we having to evaluate - shouldn't it be done already by this point?
-        # or is there a simpler or more standard way to do this?
-        if isinstance(value, mcs.Expression):
-            value = mcs.Expression(mcs.Symbol("System`N"), value)
-            value = value.evaluate(fe.session.evaluation)
-            value = value.to_python()
-
-        # TODO: regularize this
-        if sym == mcs.SymbolPlotRange:
-            if not isinstance(value, (list,tuple)):
-                value = [value, value, value]
-            ranges = [v if isinstance(v, (tuple,list)) else None for v in value]
-            # TODO: just pass through as tuple?
-            if dim == 3:
-                options.x_range, options.y_range, options.z_range = ranges
-            else:
-                options.x_range, options.y_range = ranges
-        elif sym == mcs.SymbolAxes:
-            # TODO: expand to tuple here or just let flow into plot2d/plot3d?
-            options.axes = value if isinstance(value,(tuple,list)) else (value,) * dim
-        elif sym == mcs.SymbolPlotLegends:
-            # TODO: what if differs from ColorFunction->?
-            # TODO: what if multiple legends requested?
-            options.showscale = True
-            # TODO: value sometimes comes through as expr, sometimes as tuple?
-            if getattr(value, "head", None) == mcs.SymbolBarLegend:
-                # TODO: for some reason value has literal quotes?
-                options.colorscale = str(value.elements[0])[1:-1]
-            elif isinstance(value, (tuple,list)):
-                options.colorscale = value[0]
-        elif sym == mcs.SymbolColorFunction:
-            # TODO: for some reason value is coming through with literal quotes?
-            # TODO: what if differs from PlotLegends?
-            options.colorscale = value[1:-1]
-        elif sym == mcs.SymbolImageSize:
-            # TODO: separate width, height
-            if not isinstance(value, str) and not isinstance(value, mcs.Expression):
-                options.width = options.height = value
-        elif sym == mcs.SymbolAspectRatio:
-            if not isinstance(value, str):
-                options.height = value * options.width
-        else:
-            # TODO: Plot is passing through all options even e.g. PlotPoints
-            #print(f"option {sym} not recognized")
-            pass
-
-    #options = mode.Options(axes=axes, width=width, height=height, showscale=showscale, colorscale=colorscale)
-    return options
 
 #
 # traverse a Graphics or Graphics3D expression and collect points, lines, and triangles
@@ -202,127 +121,6 @@ def process_options(fe, expr, dim):
 # TODO: can this be plugged into existing machinery for processing Graphics and Graphics3D?
 # there seems to be a bunch of stuff related to this in mathics.format that could be reused,
 # but it currently seems to assume that a string is being generated to be saved in a file
-#
-
-def collect_graphics(expr):
-
-    # xyzs is numpy array representing coordinates of triangular mesh points
-    # ijks is numpy array represent triangles as triples of indexes into xyzs
-    xyzs = []
-    ijks = []
-
-    # list of lines, each line represented by a numpy array containing
-    # coordinates of points on the line
-    lines = []
-
-    # numpy array of point coordinates
-    points = []
-
-    # options we ignore for now because not implemented
-    tbd = set(["System`Hue"])
-
-    def handle_g(g):
-
-        if g.head == mcs.SymbolPolygon or g.head == mcs.SymbolPolygon3DBox:
-            poly = [p.value for p in g.elements[0].elements]
-            i = len(xyzs)
-            xyzs.extend(poly)
-            ijks.append([i+1,i+2,i+3]) # ugh - 1-based to match GraphicsComplex Polygon
-
-        elif g.head == mcs.SymbolLine or g.head == mcs.SymbolLineBox or g.head == mcs.SymbolLine3DBox:
-            value = g.elements[0].to_python()
-            if len(value) and len(value[0]) and isinstance(value[0][0], (tuple,list)):
-                for line in value:
-                    lines.append(np.array(line))
-            elif len(value):
-                lines.append(np.array(value))
-
-        elif g.head == mcs.SymbolPoint or g.head == mcs.SymbolPointBox:
-            ps = g.elements[0].value
-            points.extend(ps)
-
-        elif g.head == mcs.SymbolGraphicsComplex:
-
-            with util.Timer("xyzs"):
-                xyzs.extend(g.elements[0].value)
-
-            def handle_c(c):
-
-                if c.head == mcs.SymbolPolygon:
-
-                    polys = c.elements[0]
-                    if isinstance(polys, mcs.NumericArray):
-                        with util.Timer("ijks from NumericArray"):
-                            # use advanced indexing to break the polygons down into triangles
-                            ngon = polys.value.shape[1]
-                            for i in range(1, ngon-1):
-                                inx = [0, i, i+1]
-                                tris = polys.value[:, inx]
-                                ijks.extend(tris)
-
-                    else:
-                        with util.Timer("ijks from mathics List of polys"):
-                            for poly in polys.elements:
-                                for j, k in zip(poly.elements[1:-1], poly.elements[2:]):
-                                    ijks.append([poly.elements[0].value, j.value, k.value])
-
-                else:
-                    raise Exception(f"Unknown head {c.head} in GraphicsComplex")
-
-            for c in g.elements[1:]:
-                handle_c(c)
-
-        elif g.head == mcs.SymbolRule:
-            pass
-
-        elif g.head == mcs.SymbolList:
-            for gg in g.elements:
-                handle_g(gg)
-
-        elif str(g.head) in tbd:
-            #print("tbd", g.head)
-            pass
-
-        else:
-            raise Exception(f"Unknown head {g.head}")
-
-    # collect graphic elements
-    for g in expr.elements:
-        handle_g(g)
-
-    # finalize to np arrays
-    # lines is already in final form: python list of np arrays, each representing a line
-    if len(xyzs) and len(ijks):
-        with util.Timer("construct xyz and ijk arrays"):
-            xyzs = np.array(xyzs)
-            ijks = np.array(ijks) - 1 # ugh - indices in Polygon are 1-based
-    points = np.array(points)
-
-    return xyzs, ijks, lines, points
-
-
-# dim=2, mode.plot2d
-def layout_GraphicsBox(fe, expr):
-    xyzs, ijks, lines, points = collect_graphics(expr)
-    options = process_options(fe, expr, dim=2)
-    # TODO: xyzs, ijks in 2d mode?
-    figure = mode.plot2d(lines, points, options)
-    layout = mode.graph(figure, options.height)
-    return layout
-
-# dim=3, mode.plot3d
-"""
-def layout_Graphics3DBox(fe, expr):
-    options = process_options(fe, expr, dim=3)
-    xyzs, ijks, lines, points = collect_graphics(expr)
-    figure = mode.plot3d(xyzs, ijks, lines, points, options)
-    layout = mode.graph(figure, options.height)
-    return layout
-"""
-
-
-#
-#
 #
 
 from mathics.core.symbols import (
@@ -487,7 +285,7 @@ def layout_GraphicsXBox(fe, expr, dim):
 
     graphics = GraphicsConsumer(expr)
 
-    thing = mode.Thing(dim, graphics.options)
+    thing = render.Thing(dim, graphics.options)
 
     for i, (kind, vertices, value) in enumerate(graphics.items()):
 
@@ -505,10 +303,6 @@ def layout_GraphicsXBox(fe, expr, dim):
                     ijks.extend(tris)
                 ijks = np.array(ijks)
                 ijks -= 1
-
-            #figure = mode.plot3d(vertices, ijks, [], [], graphics.options)
-            #layout = mode.graph(figure, graphics.options.height)
-            #return layout
 
             thing.add_mesh(vertices, ijks)
 
@@ -541,12 +335,7 @@ def layout_Graphics3DBox(*args):
 
 layout_funs = {
     mcs.SymbolManipulateBox: layout_ManipulateBox,
-
-    # NEXT  NEXT  NEXT  NEXT  NEXT  NEXT  NEXT 
-    # TODO: layout_GraphicsXBox
     mcs.SymbolGraphicsBox: layout_GraphicsBox,
-
-
     mcs.SymbolGraphics3DBox: layout_Graphics3DBox,
 }
 
