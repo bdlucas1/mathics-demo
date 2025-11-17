@@ -179,7 +179,7 @@ class GraphicsConsumer:
         # each item is homogeneous so we can make it an array
         items = [np.array(item) for item in items]
 
-        # convert 1-based indexes to 0-based
+        # convert 1-based indexes to 0-based if in GraphicsComplex
         if self.vertices is not None:
             for item in items:
                 item -= 1
@@ -213,10 +213,12 @@ class GraphicsConsumer:
             yield from self.flush()
 
         # TODO: rationalize treatment of poly, line, point top to bottom
-        # coalescing, depth, etc. is not uniform
-        # poly:  [p q r ...]
-        # line:  [p q r ...]
-        # point: p ...
+        # coalescing, depth, stacking, etc. is not uniform
+        # poly:  [p q r ...]  SymbolPolygon: [poly ...] | poly
+        # line:  [p q r ...]  SymbolLine:    [line ...] | line
+        # point: p ...        SymbolPoint:   [point ...] | point
+        # p: int     (if GraphicsComplex]
+        #    [x ...] otherwise
         elif expr.head in (SymbolPolygon, SymbolPolygonBox, SymbolPolygon3DBox):
             yield from self.item(SymbolPolygon, expr.elements[0], wanted_depth=3)
         elif expr.head in (SymbolLine, SymbolLineBox, SymbolLine3DBox):
