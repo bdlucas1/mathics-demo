@@ -142,7 +142,9 @@ SymbolGraphics3DBox = Symbol("Graphics3DBox")
 SymbolGraphicsBox = Symbol("GraphicsBox")
 SymbolGraphicsComplexBox = Symbol("GraphicsComplexBox")
 SymbolPolygonBox = Symbol("PolygonBox")
+SymbolPolygon3DBox = Symbol("Polygon3DBox")
 SymbolLineBox = Symbol("LineBox")
+SymbolLine3DBox = Symbol("Line3DBox")
 SymbolPointBox = Symbol("PointBox")
 SymbolImageSize = Symbol("ImageSize")
 SymbolAxes = Symbol("Axes")
@@ -155,9 +157,16 @@ import os
 
 from typing import Optional
 
+Waiting = collections.namedtuple("Waiting", ["kind", "vertices", "value"])
+
+# where possible things are converted to np.ndarray
+#   (not possible e.g. in lists of items, which may be non-homogeneous)
+# indexes are converted from 1-based to 0-based TODO not yet
+
 class GraphicsConsumer:
 
     vertices: Optional[list] = None
+    waiting = Waiting(None,None,None)
 
     def process_array(self, array):
         if isinstance(array, NumericArray):
@@ -177,11 +186,19 @@ class GraphicsConsumer:
             wanted_depth += 1
         while depth(value) < wanted_depth:
             value = [value]
-
         value = [np.array(v) for v in value]
 
-        return kind, self.vertices, value
-
+        if self.waiting.kind is None:
+            #print("setting self.waiting to", kind, type(self.vertices), type(value))
+            self.waiting = Waiting(kind, self.vertices, value)
+        elif self.waiting.kind == kind and self.waiting.vertices is self.vertices:
+            #print("extending waiting")
+            self.waiting.value.extend(value)
+        else:
+            #print("yielding waiting", self.waiting.kind, len(self.waiting.value))
+            yield self.waiting
+            #print("setting self.waiting to", kind, type(self.vertices), type(value))
+            self.waiting = Waiting(kind, self.vertices, value)
 
     def process(self, expr):
 
@@ -196,17 +213,18 @@ class GraphicsConsumer:
                 yield from self.process(e)
             self.vertices = None
 
-        elif expr.head in (SymbolPolygon, SymbolPolygonBox):
-            yield self.item(SymbolPolygon, expr.elements[0], wanted_depth=3)
-        elif expr.head in (SymbolLine, SymbolLineBox):
-            yield self.item(SymbolLine, expr.elements[0], wanted_depth=2)
+        elif expr.head in (SymbolPolygon, SymbolPolygonBox, SymbolPolygon3DBox):
+            yield from self.item(SymbolPolygon, expr.elements[0], wanted_depth=3)
+        elif expr.head in (SymbolLine, SymbolLineBox, SymbolLine3DBox):
+            yield from self.item(SymbolLine, expr.elements[0], wanted_depth=2)
         elif expr.head in (SymbolPoint, SymbolPointBox):
-            yield self.item(SymbolPoint, expr.elements[0], wanted_depth=1)
+            yield from self.item(SymbolPoint, expr.elements[0], wanted_depth=1)
 
         elif expr.head == SymbolHue:
-            print("xxx skpping", expr.head, " for now")
+            print("xxx skipping", expr.head, " for now")
         else:
             raise ValueError(f"unknown {expr}")
+
 
     def __init__(self, expr):
         assert expr.head in (SymbolGraphics, SymbolGraphics3D, SymbolGraphicsBox, SymbolGraphics3DBox)
@@ -288,7 +306,13 @@ class GraphicsConsumer:
             
 
     def items(self):
+
+        # process the items
         yield from self.process(self.graphics)
+
+        # flush anything still waiting
+        if self.waiting.kind is not None:
+            yield self.waiting
 
 def layout_GraphicsXBox(fe, expr, dim):
 
@@ -296,14 +320,29 @@ def layout_GraphicsXBox(fe, expr, dim):
 
     thing = render.Thing(dim, graphics.options)
 
-    for i, (kind, vertices, value) in enumerate(graphics.items()):
-
-        if i > 0:
-            raise NotImplemented("> 1 graphics items")
+    for i, (kind, vertices, items) in enumerate(graphics.items()):
 
         if kind is SymbolPolygon:
 
-            for mesh in value:
+            # try stacking the items into a single array for more efficient processing
+            # this works if all are the same degree poly, which will be typical
+            try:
+                print("xxx stacking", len(items), "items; shape of first is", items[0].shape)
+                items = [np.vstack(items)]
+            except ValueError:
+                print("ugh, can't stack")
+
+            for mesh in items:
+
+                print("xxx mesh", mesh.shape)
+                if vertices is None:
+                    with util.Timer("make vertices"):
+                        vertices = mesh.reshape(-1, 3)
+                        print("xxx vertices", vertices.shape)
+                        mesh = np.arange(len(vertices)).reshape(mesh.shape[:-1])
+                        mesh += 1 # TODO remove this when the below is done earlier
+                        print("xxx mesh", mesh)
+
 
                 with util.Timer("triangulate"):
                     ijks = []
@@ -313,16 +352,16 @@ def layout_GraphicsXBox(fe, expr, dim):
                         tris = mesh[:, inx]
                         ijks.extend(tris)
                     ijks = np.array(ijks)
-                    ijks -= 1
+                    ijks -= 1 # TODO: do this earlier
 
                 thing.add_mesh(vertices, ijks)
 
         elif kind is SymbolLine:
 
-            thing.add_lines(vertices, value)
+            thing.add_lines(vertices, items)
 
         elif kind is SymbolPoint:
-            thing.add_points(vertices, np.array(value))
+            thing.add_points(vertices, np.array(items))
 
         else:
             raise NotImplementedError(f"{kind}")
