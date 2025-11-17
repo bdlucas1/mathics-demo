@@ -38,6 +38,37 @@ TUES NOV 11
 * utilities for printing mathics expressions and sympy expressions as indented trees
 * timer utility
 
+---
+TUES NOV 18
+
+#### Next steps
+
+* Polish demo front-end
+    * move from prototype mathics core to real mathics core
+    * clean up code
+    * make visually more similar to WMA
+    * use as basis for end-to-end tests:
+       * run Plot[3D] code, generate image, compare to expected
+
+* Organize plotting options
+    * survey WMA, current code for what's in Plot3D, Graphics3D and what's needed
+    * add missing options especially in Plot3D, Graphics3D
+
+* Implement some builtins
+    * DensityPlot - requires understanding color options, possibly dependent on above?
+    * Manipulate - already have prototype
+    * ComplexPlot (or whatever it's called)
+
+* plot_compile
+    * build out more funcs for compile (see list in test_plot_compile)
+    * identify more functions not on that list
+    * for example If, Where, Module - what else?
+    * enhance test_plot_compile to confirm that all the functions operatte on numpy arrays
+
+
+
+---
+
 #### layout
 * architecture ok?
 * analgous to format, but data structure instead of string
