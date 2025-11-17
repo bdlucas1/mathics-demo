@@ -42,6 +42,8 @@ from mathics.core.systemsymbols import (
     SymbolPoint,
 )
 from mathics.core.expression import Expression
+
+# TODO: move to core
 SymbolGraphics3DBox = Symbol("Graphics3DBox")
 SymbolGraphicsBox = Symbol("GraphicsBox")
 SymbolGraphicsComplexBox = Symbol("GraphicsComplexBox")
@@ -53,6 +55,17 @@ SymbolPointBox = Symbol("PointBox")
 SymbolImageSize = Symbol("ImageSize")
 SymbolAxes = Symbol("Axes")
 SymbolHue = Symbol("Hue")
+SymbolAspectRatio = Symbol("AspectRatio")
+SymbolAxesStyle = Symbol("AxesStyle")
+SymbolBackground = Symbol("Background")
+SymbolBoxRatios = Symbol("BoxRatios")
+SymbolImageSize = Symbol("ImageSize")
+SymbolLabelStyle = Symbol("LabelStyle")
+SymbolLighting = Symbol("Lighting")
+SymbolPlotRange = Symbol("PlotRange")
+SymbolPlotRangePadding = Symbol("PlotRangePadding")
+SymbolTicksStyle = Symbol("TicksStyle")
+SymbolViewPoint = Symbol("ViewPoint")
 
 
 from mathics.core.atoms import NumericArray
@@ -101,19 +114,6 @@ class GraphicsConsumer:
             else:
                 value = [value] * n
             return value
-
-        # TODO: move to core
-        SymbolAspectRatio = Symbol("AspectRatio")
-        SymbolAxesStyle = Symbol("AxesStyle")
-        SymbolBackground = Symbol("Background")
-        SymbolBoxRatios = Symbol("BoxRatios")
-        SymbolImageSize = Symbol("ImageSize")
-        SymbolLabelStyle = Symbol("LabelStyle")
-        SymbolLighting = Symbol("Lighting")
-        SymbolPlotRange = Symbol("PlotRange")
-        SymbolPlotRangePadding = Symbol("PlotRangePadding")
-        SymbolTicksStyle = Symbol("TicksStyle")
-        SymbolViewPoint = Symbol("ViewPoint")
 
         for rule in expr.elements[1:]:
             assert rule.head == SymbolRule
@@ -265,7 +265,7 @@ def layout_GraphicsXBox(fe, expr, dim):
                 #print("xxx mesh", mesh.shape)
                 if vertices is None:
                     with util.Timer("make vertices"):
-                        vertices = mesh.reshape(-1, 3)
+                        vertices = mesh.reshape(-1, dim)
                         mesh = np.arange(len(vertices)).reshape(mesh.shape[:-1])
 
                 with util.Timer("triangulate"):

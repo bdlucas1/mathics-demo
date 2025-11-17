@@ -53,15 +53,44 @@ class Thing:
     def add_mesh(self, xyzs, ijks):
 
         # TODO: 2d case, e.g. DensityPlot?
-        mesh = go.Mesh3d(
-            x=xyzs[:,0], y=xyzs[:,1], z=xyzs[:,2],
-            i=ijks[:,0], j=ijks[:,1], k=ijks[:,2],
-            # TODO: hmm, colorscale is figure-level, isn't it?
-            showscale=self.options.showscale,
-            colorscale=self.options.colorscale,
-            colorbar=dict(thickness=10), intensity=xyzs[:,2],
-            hoverinfo="none"
-        )
+        if self.dim==3:
+            mesh = go.Mesh3d(
+                x=xyzs[:,0], y=xyzs[:,1], z=xyzs[:,2],
+                i=ijks[:,0], j=ijks[:,1], k=ijks[:,2],
+                # TODO: hmm, colorscale is figure-level, isn't it?
+                showscale=self.options.showscale,
+                colorscale=self.options.colorscale,
+                colorbar=dict(thickness=10), intensity=xyzs[:,2],
+                hoverinfo="none"
+            )
+        elif self.dim==2:
+            # this is hacky because
+            # 1) names are funky given indexing - rename
+            # 2) use of points to approximate mesh
+            # 2a) at least choose a good size and shape for the points that works for square mesh
+            # 3) use centroid, probably
+            # 4) use colors
+            # 5) apply the indexing thing elsewhere too
+            # 6) vertices are being generated but here we have to un-generate
+            #    make generation of vertices and ungeneration specific to each plot type
+            # 7) Timer for DensityPlot
+            # 8) it came in as quads, keep it that way - move triangulation inside
+            # 9) enough diffs that we should probably have Thing2 and Thing3
+            # 10) rename THing
+            # 11) why no axes?
+            # 12) no colors!
+            print("xxx", type(xyzs), type(ijks))
+            if xyzs is not None:
+                points = xyzs[ijks]
+            else:
+                points = ijks
+            points = points.reshape(-1, 2) # should take centroid of each poly
+            print("xxx", points)
+            mesh = go.Scatter(
+                x=points[:,0], y=points[:,1],
+                mode='markers', marker=dict(color='black', size=8)
+            )
+
         self.data.append(mesh)
 
     util.Timer("figure")
