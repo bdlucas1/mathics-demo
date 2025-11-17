@@ -171,80 +171,7 @@ class GraphicsConsumer:
     vertices: Optional[list] = None
 
     # this coalesces consecutive items of the same kind
-    waiting = Waiting(None, None, None)
-
-    def process_array(self, array):
-        if isinstance(array, NumericArray):
-            return array.value
-        else:
-            raise ValueError(f"array type is {type(array)}")
-
-    def item(self, kind, expr, wanted_depth):
-
-        if isinstance(expr, NumericArray):
-            items = expr.value
-        elif isinstance(expr, Expression):
-            items = expr.to_python()
-
-        # make items uniformly a list of items, never just a single item
-        depth = lambda x: 1 + depth(x[0]) if isinstance(x, (list,tuple,np.ndarray)) else 0
-        if self.vertices is None:
-            wanted_depth += 1
-        while depth(items) < wanted_depth:
-            items = [items]
-
-        # each item is homogeneous so we can make it an array
-        items = [np.array(item) for item in items]
-
-        # convert 1-based indexes to 0-based
-        if self.vertices is not None:
-            for item in items:
-                item -= 1
-
-        # flush if needed, add our items to waiting items
-        if self.waiting.kind is None:
-            self.waiting = Waiting(kind, self.vertices, items)
-        elif self.waiting.kind == kind and self.waiting.vertices is self.vertices:
-            self.waiting.items.extend(items)
-        else:
-            yield self.waiting
-            self.waiting = Waiting(kind, self.vertices, items)
-
-    def flush(self):
-        """ Flush any waiting items """
-        if self.waiting.kind is not None:
-            yield self.waiting
-
-    def process(self, expr):
-
-        if expr.head == SymbolList:
-            for e in expr:
-                yield from self.process(e)
-
-        elif expr.head in (SymbolGraphicsComplex, SymbolGraphicsComplexBox):
-            # TODO: allow elements for array
-            self.vertices = self.process_array(expr.elements[0])
-            for e in expr.elements[1:]:
-                yield from self.process(e)
-            self.vertices = None
-            yield from self.flush()
-
-        # poly:  [p q r ...]
-        # line:  [p q r ...]
-        # point: p ...
-
-        elif expr.head in (SymbolPolygon, SymbolPolygonBox, SymbolPolygon3DBox):
-            yield from self.item(SymbolPolygon, expr.elements[0], wanted_depth=3)
-        elif expr.head in (SymbolLine, SymbolLineBox, SymbolLine3DBox):
-            yield from self.item(SymbolLine, expr.elements[0], wanted_depth=2)
-        elif expr.head in (SymbolPoint, SymbolPointBox):
-            yield from self.item(SymbolPoint, expr.elements[0], wanted_depth=1)
-
-        elif expr.head == SymbolHue:
-            print("xxx skipping", expr.head, " for now")
-        else:
-            raise ValueError(f"unknown {expr}")
-
+    waiting = None
 
     def __init__(self, expr):
         assert expr.head in (SymbolGraphics, SymbolGraphics3D, SymbolGraphicsBox, SymbolGraphics3DBox)
@@ -323,6 +250,82 @@ class GraphicsConsumer:
             else:
                 #raise ValueError(f"unknown rule {name}")
                 print(f"unknown rule {name}")
+
+
+    def process_array(self, array):
+        if isinstance(array, NumericArray):
+            return array.value
+        else:
+            raise ValueError(f"array type is {type(array)}")
+
+    def item(self, kind, expr, wanted_depth):
+
+        if isinstance(expr, NumericArray):
+            items = expr.value
+        elif isinstance(expr, Expression):
+            items = expr.to_python()
+
+        # make items uniformly a list of items, never just a single item
+        depth = lambda x: 1 + depth(x[0]) if isinstance(x, (list,tuple,np.ndarray)) else 0
+        if self.vertices is None:
+            wanted_depth += 1
+        while depth(items) < wanted_depth:
+            items = [items]
+
+        # each item is homogeneous so we can make it an array
+        items = [np.array(item) for item in items]
+
+        # convert 1-based indexes to 0-based
+        if self.vertices is not None:
+            for item in items:
+                item -= 1
+
+        # flush if needed, add our items to waiting items
+        if self.waiting is None:
+            self.waiting = Waiting(kind, self.vertices, items)
+        elif self.waiting.kind == kind and self.waiting.vertices is self.vertices:
+            self.waiting.items.extend(items)
+        else:
+            yield self.waiting
+            self.waiting = Waiting(kind, self.vertices, items)
+
+    def flush(self):
+        """ Flush any waiting items """
+        if self.waiting is not None:
+            yield self.waiting
+
+    def process(self, expr):
+
+        if expr.head == SymbolList:
+            for e in expr:
+                yield from self.process(e)
+
+        elif expr.head in (SymbolGraphicsComplex, SymbolGraphicsComplexBox):
+            # TODO: allow elements for array
+            self.vertices = self.process_array(expr.elements[0])
+            for e in expr.elements[1:]:
+                yield from self.process(e)
+            self.vertices = None
+            yield from self.flush()
+
+        # TODO: rationalize treatment of poly, line, point top to bottom
+        # coalescing, depth, etc. is not uniform
+        # poly:  [p q r ...]
+        # line:  [p q r ...]
+        # point: p ...
+        elif expr.head in (SymbolPolygon, SymbolPolygonBox, SymbolPolygon3DBox):
+            yield from self.item(SymbolPolygon, expr.elements[0], wanted_depth=3)
+        elif expr.head in (SymbolLine, SymbolLineBox, SymbolLine3DBox):
+            yield from self.item(SymbolLine, expr.elements[0], wanted_depth=2)
+        elif expr.head in (SymbolPoint, SymbolPointBox):
+            yield from self.item(SymbolPoint, expr.elements[0], wanted_depth=1)
+
+        elif expr.head == SymbolHue:
+            print("xxx skipping", expr.head, " for now")
+        else:
+            raise ValueError(f"unknown {expr}")
+
+
             
 
     def items(self):
@@ -346,21 +349,18 @@ def layout_GraphicsXBox(fe, expr, dim):
             # try stacking the items into a single array for more efficient processing
             # this works if all are the same degree poly, which will be typical
             try:
-                print("xxx stacking", len(items), "items; shape of first is", items[0].shape)
+                #print("xxx stacking", len(items), "items; shape of first is", items[0].shape)
                 items = [np.vstack(items)]
             except ValueError:
                 print("ugh, can't stack")
 
             for mesh in items:
 
-                print("xxx mesh", mesh.shape)
+                #print("xxx mesh", mesh.shape)
                 if vertices is None:
                     with util.Timer("make vertices"):
                         vertices = mesh.reshape(-1, 3)
-                        print("xxx vertices", vertices.shape)
                         mesh = np.arange(len(vertices)).reshape(mesh.shape[:-1])
-                        print("xxx mesh", mesh)
-
 
                 with util.Timer("triangulate"):
                     ijks = []
@@ -383,11 +383,9 @@ def layout_GraphicsXBox(fe, expr, dim):
         else:
             raise NotImplementedError(f"{kind}")
 
-        
-
-        figure = thing.figure()
-        layout = mode.graph(figure, graphics.options.height)
-        return layout
+    figure = thing.figure()
+    layout = mode.graph(figure, graphics.options.height)
+    return layout
 
 #
 #

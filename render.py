@@ -18,21 +18,34 @@ class Thing:
     util.Timer("add_points")
     def add_points(self, vertices, points):
         
-        scatter_points = go.Scatter(
-            x = points[:,0], y = points[:,1],
-            mode='markers', marker=dict(color='black', size=8)
-        )
-        #figure.add_trace(scatter_points)
+        if self.dim == 2:
+            scatter_points = go.Scatter(
+                x = points[:,0], y = points[:,1],
+                mode='markers', marker=dict(color='black', size=8)
+            )
+        elif self.dim == 3:
+            scatter_points = go.Scatter(
+                x = points[:,0], y = points[:,1], z = points[:,2],
+                mode='markers', marker=dict(color='black', size=8)
+            )
         self.data.append(scatter_points)
 
     util.Timer("add_lines")
     def add_lines(self, vertices, lines):
+
         for line in lines:
-            scatter_lines = go.Scatter(
-                x = line[:,0], y = line[:,1],
-                mode='lines', line=dict(color='black', width=1)
-            )
-            #figure.add_trace(scatter_lines)
+            if self.dim == 2:
+                scatter_lines = go.Scatter(
+                    x = line[:,0], y = line[:,1],
+                    mode='lines', line=dict(color='black', width=1),
+                    showlegend=False
+                )
+            elif self.dim == 3:
+                scatter_lines = go.Scatter3d(
+                    x = line[:,0], y = line[:,1], z = line[:,2],
+                    mode='lines', line=dict(color='black', width=1),
+                    showlegend=False
+                )
             self.data.append(scatter_lines)
 
     # TODO: move triangulation inside?
