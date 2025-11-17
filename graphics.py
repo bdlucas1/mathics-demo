@@ -168,32 +168,43 @@ class GraphicsConsumer:
         else:
             raise ValueError(f"array type is {type(array)}")
 
+    def regularize(self, kind, expr, wanted_depth):
+
+        if isinstance(expr, NumericArray):
+            value = expr.value
+        elif isinstance(expr, Expression):
+            value = expr.to_python()
+
+        depth = lambda x: 1 + depth(x[0]) if isinstance(x, (list,tuple,np.ndarray)) else 0
+        if self.vertices is None:
+            wanted_depth += 1
+        while depth(value) < wanted_depth:
+            value = [value]
+
+        value = [np.array(v) for v in value]
+
+        yield from self.emit(kind, value)
+
+
     def process(self, expr):
+
         if expr.head == SymbolList:
             for e in expr:
                 yield from self.process(e)
+
         elif expr.head in (SymbolGraphicsComplex, SymbolGraphicsComplexBox):
             self.vertices = self.process_array(expr.elements[0])
             for e in expr.elements[1:]:
                 yield from self.process(e)
             self.vertices = None
+
         elif expr.head in (SymbolPolygon, SymbolPolygonBox):
-            poly = expr.elements[0]
-            if isinstance(poly, NumericArray):
-                yield from self.emit(SymbolPolygon, poly.value)
-            else:
-                raise ValueError("poly type {type(poly)}")
+            yield from self.regularize(SymbolPolygon, expr.elements[0], wanted_depth=3)
         elif expr.head in (SymbolLine, SymbolLineBox):
-            lines = expr.elements[0]
-            if isinstance(lines, NumericArray):
-                yield from self.emit(SymbolLine, lines.value)
-            elif isinstance(lines, Expression):
-                lines = lines.value
-                lines = np.array(lines)
-                yield from self.emit(SymbolLine, lines)
+            yield from self.regularize(SymbolLine, expr.elements[0], wanted_depth=2)
         elif expr.head in (SymbolPoint, SymbolPointBox):
-            points = expr.elements[0]
-            yield from self.emit(SymbolPoint, np.array(points.value))
+            yield from self.regularize(SymbolPoint, expr.elements[0], wanted_depth=1)
+
         elif expr.head == SymbolHue:
             print("xxx skpping", expr.head, " for now")
         else:
@@ -294,17 +305,19 @@ def layout_GraphicsXBox(fe, expr, dim):
 
         if kind is SymbolPolygon:
 
-            with util.Timer("triangulate"):
-                ijks = []
-                ngon = value.shape[1]
-                for i in range(1, ngon-1):
-                    inx = [0, i, i+1]
-                    tris = value[:, inx]
-                    ijks.extend(tris)
-                ijks = np.array(ijks)
-                ijks -= 1
+            for mesh in value:
 
-            thing.add_mesh(vertices, ijks)
+                with util.Timer("triangulate"):
+                    ijks = []
+                    ngon = mesh.shape[1]
+                    for i in range(1, ngon-1):
+                        inx = [0, i, i+1]
+                        tris = mesh[:, inx]
+                        ijks.extend(tris)
+                    ijks = np.array(ijks)
+                    ijks -= 1
+
+                thing.add_mesh(vertices, ijks)
 
         elif kind is SymbolLine:
 
