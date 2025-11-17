@@ -159,16 +159,13 @@ class GraphicsConsumer:
 
     vertices: Optional[list] = None
 
-    def emit(self, kind, value):
-        yield kind, self.vertices, value
-
     def process_array(self, array):
         if isinstance(array, NumericArray):
             return array.value
         else:
             raise ValueError(f"array type is {type(array)}")
 
-    def regularize(self, kind, expr, wanted_depth):
+    def item(self, kind, expr, wanted_depth):
 
         if isinstance(expr, NumericArray):
             value = expr.value
@@ -183,7 +180,7 @@ class GraphicsConsumer:
 
         value = [np.array(v) for v in value]
 
-        yield from self.emit(kind, value)
+        return kind, self.vertices, value
 
 
     def process(self, expr):
@@ -193,17 +190,18 @@ class GraphicsConsumer:
                 yield from self.process(e)
 
         elif expr.head in (SymbolGraphicsComplex, SymbolGraphicsComplexBox):
+            # TODO: allow elements for array
             self.vertices = self.process_array(expr.elements[0])
             for e in expr.elements[1:]:
                 yield from self.process(e)
             self.vertices = None
 
         elif expr.head in (SymbolPolygon, SymbolPolygonBox):
-            yield from self.regularize(SymbolPolygon, expr.elements[0], wanted_depth=3)
+            yield self.item(SymbolPolygon, expr.elements[0], wanted_depth=3)
         elif expr.head in (SymbolLine, SymbolLineBox):
-            yield from self.regularize(SymbolLine, expr.elements[0], wanted_depth=2)
+            yield self.item(SymbolLine, expr.elements[0], wanted_depth=2)
         elif expr.head in (SymbolPoint, SymbolPointBox):
-            yield from self.regularize(SymbolPoint, expr.elements[0], wanted_depth=1)
+            yield self.item(SymbolPoint, expr.elements[0], wanted_depth=1)
 
         elif expr.head == SymbolHue:
             print("xxx skpping", expr.head, " for now")
