@@ -162,7 +162,7 @@ from typing import Optional
 # indexes are converted from 1-based to 0-based TODO not yet
 # where possible, lists of items are coalesced by kind
 
-Waiting = collections.namedtuple("Waiting", ["kind", "vertices", "value"])
+Waiting = collections.namedtuple("Waiting", ["kind", "vertices", "items"])
 
 class GraphicsConsumer:
 
@@ -182,30 +182,36 @@ class GraphicsConsumer:
     def item(self, kind, expr, wanted_depth):
 
         if isinstance(expr, NumericArray):
-            value = expr.value
+            items = expr.value
         elif isinstance(expr, Expression):
-            value = expr.to_python()
+            items = expr.to_python()
 
+        # make items uniformly a list of items, never just a single item
         depth = lambda x: 1 + depth(x[0]) if isinstance(x, (list,tuple,np.ndarray)) else 0
         if self.vertices is None:
             wanted_depth += 1
-        while depth(value) < wanted_depth:
-            value = [value]
-        value = [np.array(v) for v in value]
+        while depth(items) < wanted_depth:
+            items = [items]
 
+        # each item is homogeneous so we can make it an array
+        items = [np.array(item) for item in items]
+
+        # convert 1-based indexes to 0-based
+        if self.vertices is not None:
+            for item in items:
+                item -= 1
+
+        # flush if needed, add our items to waiting items
         if self.waiting.kind is None:
-            #print("setting self.waiting to", kind, type(self.vertices), type(value))
-            self.waiting = Waiting(kind, self.vertices, value)
+            self.waiting = Waiting(kind, self.vertices, items)
         elif self.waiting.kind == kind and self.waiting.vertices is self.vertices:
-            #print("extending waiting")
-            self.waiting.value.extend(value)
+            self.waiting.items.extend(items)
         else:
-            #print("yielding waiting", self.waiting.kind, len(self.waiting.value))
             yield self.waiting
-            #print("setting self.waiting to", kind, type(self.vertices), type(value))
-            self.waiting = Waiting(kind, self.vertices, value)
+            self.waiting = Waiting(kind, self.vertices, items)
 
     def flush(self):
+        """ Flush any waiting items """
         if self.waiting.kind is not None:
             yield self.waiting
 
@@ -222,6 +228,10 @@ class GraphicsConsumer:
                 yield from self.process(e)
             self.vertices = None
             yield from self.flush()
+
+        # poly:  [p q r ...]
+        # line:  [p q r ...]
+        # point: p ...
 
         elif expr.head in (SymbolPolygon, SymbolPolygonBox, SymbolPolygon3DBox):
             yield from self.item(SymbolPolygon, expr.elements[0], wanted_depth=3)
@@ -349,7 +359,6 @@ def layout_GraphicsXBox(fe, expr, dim):
                         vertices = mesh.reshape(-1, 3)
                         print("xxx vertices", vertices.shape)
                         mesh = np.arange(len(vertices)).reshape(mesh.shape[:-1])
-                        mesh += 1 # TODO remove this when the below is done earlier
                         print("xxx mesh", mesh)
 
 
@@ -361,7 +370,6 @@ def layout_GraphicsXBox(fe, expr, dim):
                         tris = mesh[:, inx]
                         ijks.extend(tris)
                     ijks = np.array(ijks)
-                    ijks -= 1 # TODO: do this earlier
 
                 thing.add_mesh(vertices, ijks)
 
