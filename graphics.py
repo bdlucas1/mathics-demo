@@ -246,7 +246,7 @@ def layout_GraphicsXBox(fe, expr, dim):
 
     graphics = GraphicsConsumer(expr)
 
-    thing = render.Thing(dim, graphics.options)
+    thing = render.Thing(fe, dim, graphics.options)
 
     for i, (kind, vertices, items) in enumerate(graphics.items()):
 

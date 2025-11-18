@@ -5,7 +5,8 @@ import traceback
 import urllib.parse
 import webbrowser
 import webview
-from mathics.timing import Timer
+from mathics.timing import *
+from mathics.core.util import *
 
 import mcs
 

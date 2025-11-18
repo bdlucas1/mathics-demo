@@ -10,7 +10,8 @@ def axis(show, range, title):
 
 class Thing:
 
-    def __init__(self, dim, options):
+    def __init__(self, fe, dim, options):
+        self.fe = fe
         self.dim = dim
         self.data = []
         self.options = options
@@ -50,17 +51,17 @@ class Thing:
 
     # TODO: move triangulation inside?
     util.Timer("add_mesh")
-    def add_mesh(self, xyzs, ijks):
+    def add_mesh(self, vertices, polys):
 
         # TODO: 2d case, e.g. DensityPlot?
         if self.dim==3:
             mesh = go.Mesh3d(
-                x=xyzs[:,0], y=xyzs[:,1], z=xyzs[:,2],
-                i=ijks[:,0], j=ijks[:,1], k=ijks[:,2],
+                x=vertices[:,0], y=vertices[:,1], z=vertices[:,2],
+                i=polys[:,0], j=polys[:,1], k=polys[:,2],
                 # TODO: hmm, colorscale is figure-level, isn't it?
                 showscale=self.options.showscale,
                 colorscale=self.options.colorscale,
-                colorbar=dict(thickness=10), intensity=xyzs[:,2],
+                colorbar=dict(thickness=10), intensity=vertices[:,2],
                 hoverinfo="none"
             )
         elif self.dim==2:
@@ -79,11 +80,11 @@ class Thing:
             # 10) rename THing
             # 11) why no axes?
             # 12) no colors!
-            print("xxx", type(xyzs), type(ijks))
-            if xyzs is not None:
-                points = xyzs[ijks]
+            print("xxx", type(vertices), type(polys))
+            if vertices is not None:
+                points = vertices[polys]
             else:
-                points = ijks
+                points = polys
             points = points.reshape(-1, 2) # should take centroid of each poly
             print("xxx", points)
             mesh = go.Scatter(
@@ -122,6 +123,10 @@ class Thing:
 
         with util.Timer("FigureWidget"):
             figure = go.FigureWidget(data=self.data, layout = layout)
+            if hasattr(self.fe, "test_image"):
+                import plotly.io as pio
+                pio.write_image(figure, self.fe.test_image)
+                print("wrote", self.fe.test_image)
 
         return figure
 
