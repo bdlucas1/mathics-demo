@@ -10,7 +10,6 @@ import dash
 import numpy as np
 
 import layout as lt
-import mcs
 import mode
 import util
 

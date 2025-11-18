@@ -4,6 +4,6 @@ from mathics.core.expression import *
 from mathics.core.list import *
 from mathics.session import *
 
-#from mathics.core.attributes import A_HOLD_FIRST, A_PROTECTED, A_HOLD_ALL
-#from mathics.builtin.box.graphics import LineBox
-#from mathics.builtin.box.expression import BoxExpression
+#from mathics.core.attributes import A_HOLD_FIRST, A_PROTECTED, A_HOLD_AL
+from mathics.builtin.box.graphics import *
+from mathics.builtin.box.expression import *

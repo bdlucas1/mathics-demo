@@ -9,8 +9,6 @@ import webview
 from mathics.core.util import *
 from mathics.timing import *
 
-import mcs
-
 
 def print_stack_reversed(file=None):
     """Print the current stack trace, from innermost to outermost."""

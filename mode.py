@@ -68,7 +68,7 @@ if in_jupyter:
     # TODO: reconsider this?
     class FE:
         def __init__(self):
-            self.session = mcs.MathicsSession()
+            self.session = core.MathicsSession()
     the_fe = FE()
 
     sys.stdout = sys.__stderr__

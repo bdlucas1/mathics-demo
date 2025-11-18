@@ -14,9 +14,10 @@ that can be displayed by the front-end.
 
 import mathics.core.formatter as fmt
 
+import core
 import graphics
-import mcs
 import mode
+import sym
 import util
 
 
@@ -68,8 +69,8 @@ def grid_box(fe, expr):
     return layout
 
 layout_funs = {
-    mcs.SymbolRowBox: row_box,
-    mcs.SymbolGridBox: grid_box,
+    sym.SymbolRowBox: row_box,
+    sym.SymbolGridBox: grid_box,
 }
 
 special = {
@@ -101,7 +102,7 @@ def _boxes_to_latex_or_layout(fe, expr):
         return layout_funs[expr.head](fe, expr)
     elif getattr(expr, "head", None) in graphics.layout_funs:
         return graphics.layout_funs[expr.head](fe, expr)
-    elif isinstance(expr,mcs.String):
+    elif isinstance(expr,core.String):
         if expr.value in special:
             value = special[expr.value]
         elif len(expr.value) >= 2 and expr.value[0] == '"' and expr.value[-1] == '"':
@@ -138,8 +139,8 @@ def expression_to_layout(fe, expr):
     if str(getattr(expr, "head", None)).endswith("Box"):
         boxed = expr
     else:
-        form = mcs.SymbolTraditionalForm
-        boxed = mcs.Expression(mcs.Symbol("System`ToBoxes"), expr, form).evaluate(fe.session.evaluation)
+        form = sym.SymbolTraditionalForm
+        boxed = core.Expression(sym.Symbol("System`ToBoxes"), expr, form).evaluate(fe.session.evaluation)
 
     #print("after boxing:"); util.prt_expr_tree(boxed)
 

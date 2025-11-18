@@ -11,7 +11,6 @@ import IPython.display as ipd
 import ipywidgets as ipw
 
 import layout as lt
-import mcs
 import mode
 import util
 

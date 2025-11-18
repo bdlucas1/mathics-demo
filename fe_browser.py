@@ -6,7 +6,6 @@ import dash
 import werkzeug
 
 import layout as lt
-import mcs
 import mode  # really just need mode_dash
 import util
 
@@ -33,7 +32,7 @@ class DashFrontEnd:
             print("using port", self.server.server_port)
 
         # everybody needs a Mathics session
-        self.session = mcs.MathicsSession()
+        self.session = core.MathicsSession()
 
         # register pattern-matching callbacks for dymanically generated content, used by all front ends
         mode.register_callbacks(self.app)
@@ -106,7 +105,7 @@ class BrowserFrontEnd(DashFrontEnd):
 
         # text output
         if not result:
-            if getattr(expr, "head", None) in set([mcs.SymbolGraphics, mcs.SymbolGraphics3D]):
+            if getattr(expr, "head", None) in set([sym.SymbolGraphics, sym.SymbolGraphics3D]):
                 result = str(expr.head)
             else:
                 # TODO: how to get this to output Sin instead of System`Sin etc.

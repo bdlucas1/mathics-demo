@@ -6,10 +6,11 @@ import numpy as np
 from mathics.core.builtin import Builtin
 from mathics.core.load_builtin import add_builtins
 
+import core
 import layout as lt
-import mcs
 import mode
 import render
+import sym
 import util
 
 #
@@ -18,7 +19,7 @@ import util
 
 class Manipulate(Builtin):
 
-    attributes = mcs.A_HOLD_FIRST
+    attributes = core.A_HOLD_FIRST
 
     # TODO: expr is held so it arrives here safely, but for some reason by the time it
     # gets to eval_makeboxes it has some funky HoldForm's interspersed. To see that,
@@ -27,8 +28,8 @@ class Manipulate(Builtin):
     # There must be a better way.
     def eval(self, evaluation, expr, sliders):
         "Manipulate[expr_, sliders___]"
-        if not isinstance(expr, mcs.String):
-            return mcs.Expression(mcs.SymbolManipulate, mcs.String(str(expr)), sliders)
+        if not isinstance(expr, core.String):
+            return core.Expression(sym.SymbolManipulate, core.String(str(expr)), sliders)
         return None
 
     def eval_makeboxes(self, evaluation, expr, sliders, form, *args, **kwargs):
@@ -47,7 +48,7 @@ class Manipulate(Builtin):
 # TODO: Mathematica does something more complicated, and more general,
 # involving DynamicModule, Dymanic, Dynamic*Box, etc.
 # Do we want to emulate that?
-class ManipulateBox(mcs.BoxExpression):
+class ManipulateBox(core.BoxExpression):
     def __init__(self, expr, sliders):
         super().__init__(self, expr, sliders)
 
@@ -69,7 +70,7 @@ def layout_ManipulateBox(fe, manipulate_expr):
     # the rest of elements and wrap them in a List, even if there is only one.
     # Instead we get just the element if only one, and the elements in a Sequence (not List) if >1
     # Am I doing something wrong or misunderstanding?
-    if slider_expr.head == mcs.SymbolSequence:
+    if slider_expr.head == sym.SymbolSequence:
         slider_specs = [s.to_python() for s in slider_expr.elements]
     else:
         slider_specs = [slider_expr.to_python()]
@@ -93,7 +94,7 @@ def layout_ManipulateBox(fe, manipulate_expr):
         # TODO: best order for replace_vars and eval?
         values = {s.name: a for s, a in zip(sliders, values)}
         with util.Timer("replace and eval"):
-            expr = target_expr.replace_vars({"Global`"+n: mcs.Real(v) for n, v in values.items()})
+            expr = target_expr.replace_vars({"Global`"+n: core.Real(v) for n, v in values.items()})
             expr = expr.evaluate(fe.session.evaluation)
         with util.Timer("layout"):
             layout = lt.expression_to_layout(fe, expr)
