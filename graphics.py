@@ -196,7 +196,7 @@ class GraphicsConsumer:
         elif self.waiting.kind == kind and self.waiting.vertices is self.vertices:
             self.waiting.items.extend(items)
         else:
-            yield self.waiting
+            yield from self.flush()
             self.waiting = Waiting(kind, self.vertices, items)
 
     def flush(self):
@@ -227,7 +227,7 @@ class GraphicsConsumer:
         # p: int     (if GraphicsComplex]
         #    [x ...] otherwise
         elif expr.head in (SymbolPolygon, SymbolPolygonBox, SymbolPolygon3DBox):
-            yield from self.item(SymbolPolygon, expr.elements[0], wanted_depth=3)
+            yield from self.item(SymbolPolygon, expr.elements[0], wanted_depth=2)
         elif expr.head in (SymbolLine, SymbolLineBox, SymbolLine3DBox):
             yield from self.item(SymbolLine, expr.elements[0], wanted_depth=2)
         elif expr.head in (SymbolPoint, SymbolPointBox):
