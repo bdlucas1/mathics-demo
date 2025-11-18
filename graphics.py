@@ -21,23 +21,23 @@ import util
 from consumer import GraphicsConsumer
 
 
-def layout_GraphicsXBox(fe, expr, dim):
+def layout_GraphicsBox(fe, expr, dim):
 
     graphics = GraphicsConsumer(expr)
 
-    thing = render.Thing(fe, dim, graphics.options)
+    builder = render.FigureBuilder(fe, dim, graphics.options)
 
     for i, (kind, vertices, item) in enumerate(graphics.items()):
         if kind is sym.SymbolPolygon:
-            thing.add_polys(vertices, item)
+            builder.add_polys(vertices, item)
         elif kind is sym.SymbolLine:
-            thing.add_lines(vertices, item)
+            builder.add_lines(vertices, item)
         elif kind is sym.SymbolPoint:
-            thing.add_points(vertices, item)
+            builder.add_points(vertices, item)
         else:
             raise NotImplementedError(f"{kind}")
 
-    figure = thing.figure()
+    figure = builder.figure()
     layout = mode.graph(figure, graphics.options.height)
     return layout
 
@@ -45,19 +45,12 @@ def layout_GraphicsXBox(fe, expr, dim):
 #
 #
 
-def layout_GraphicsBox(*args):
-    return layout_GraphicsXBox(dim=2, *args)
-
-def layout_Graphics3DBox(*args):
-    return layout_GraphicsXBox(dim=3, *args)    
-
-
 from manipulate import layout_ManipulateBox
 
 layout_funs = {
     sym.SymbolManipulateBox: layout_ManipulateBox,
-    sym.SymbolGraphicsBox: layout_GraphicsBox,
-    sym.SymbolGraphics3DBox: layout_Graphics3DBox,
+    sym.SymbolGraphicsBox: lambda *args: layout_GraphicsBox(dim=2, *args),
+    sym.SymbolGraphics3DBox: lambda *args: layout_GraphicsBox(dim=3, *args)
 }
 
 

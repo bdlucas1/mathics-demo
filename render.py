@@ -11,7 +11,7 @@ def axis(show, range, title):
         axis |= dict(visible=False, showline=False, ticks=None, showticklabels=False)
     return axis
 
-class Thing:
+class FigureBuilder:
 
     def __init__(self, fe, dim, options):
         self.fe = fe
