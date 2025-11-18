@@ -1,4 +1,5 @@
 import argparse
+import importlib
 import os
 import sys
 import threading
@@ -53,6 +54,19 @@ failures = 0
 successes = 0
 
 for fn in args.files:
+
+    if fn in ("CLASSIC", "VECTORIZED"):
+        if fn == "CLASSIC":
+            try:
+                del os.environ["MATHICS3_USE_VECTORIZED_PLOT"]
+            except Exception:
+                pass
+        elif fn == "VECTORIZED":
+            os.environ["MATHICS3_USE_VECTORIZED_PLOT"] = "yes"
+
+        import mathics.builtin.drawing.plot as plot
+        importlib.reload(plot)
+        continue
 
     fn_m = fn.replace(".png", ".m")
     fn_ref = fn.replace(".m", ".png")

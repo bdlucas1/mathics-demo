@@ -21,7 +21,6 @@ class Thing:
 
     util.Timer("add_points")
     def add_points(self, vertices, points):
-        print("xxx points", points)
         if self.dim == 2:
             scatter_points = go.Scatter(
                 x = points[:,0], y = points[:,1],
@@ -37,19 +36,20 @@ class Thing:
 
     util.Timer("add_lines")
     def add_lines(self, vertices, lines):
-        if self.dim == 2:
-            scatter_lines = go.Scatter(
-                x = lines[:,0], y = lines[:,1],
-                mode='lines', line=dict(color='black', width=1),
-                showlegend=False
-            )
-        elif self.dim == 3:
-            scatter_lines = go.Scatter3d(
-                x = lines[:,0], y = lines[:,1], z = lines[:,2],
-                mode='lines', line=dict(color='black', width=1),
-                showlegend=False
-            )
-        self.data.append(scatter_lines)
+        for line in lines:
+            if self.dim == 2:
+                scatter_line = go.Scatter(
+                    x = line[:,0], y = line[:,1],
+                    mode='lines', line=dict(color='black', width=1),
+                    showlegend=False
+                )
+            elif self.dim == 3:
+                scatter_line = go.Scatter3d(
+                    x = line[:,0], y = line[:,1], z = line[:,2],
+                    mode='lines', line=dict(color='black', width=1),
+                    showlegend=False
+                )
+            self.data.append(scatter_line)
 
     # TODO: move triangulation inside?
     util.Timer("add_mesh")
@@ -59,8 +59,8 @@ class Thing:
 
             if vertices is None:
                 with util.Timer("make vertices"):
-                    vertices = polys.reshape(-1, dim)
-                    polys = np.arange(len(vertices)).reshape(mesh.shape[:-1])
+                    vertices = polys.reshape(-1, self.dim)
+                    polys = np.arange(len(vertices)).reshape(polys.shape[:-1])
 
             with util.Timer("triangulate"):
                 ijks = []
@@ -96,7 +96,6 @@ class Thing:
             # 10) rename THing
             # 11) why no axes?
             # 12) no colors!
-            print("xxx", type(vertices), type(polys))
             if vertices is not None:
                 points = vertices[polys]
             else:

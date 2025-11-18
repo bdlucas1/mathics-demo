@@ -123,12 +123,6 @@ class GraphicsConsumer:
         # each item must be homogeneous so we can make it an array
         items = [np.array(item) for item in items]
 
-        # stack items if possible for more efficent processing
-        try:
-            items = [np.vstack(items)]
-        except ValueError:
-            print("ugh, can't stack")
-
         # convert 1-based indexes to 0-based if in GraphicsComplex
         if self.vertices is not None:
             for item in items:
@@ -146,7 +140,18 @@ class GraphicsConsumer:
     def flush(self):
         """ Flush any waiting items """
         if self.waiting is not None:
-            for item in self.waiting.items:
+
+            # stack items if possible for more efficent processing
+            items = self.waiting.items
+            try:
+                msg = f"stacked {len(items)} {self.waiting.kind} to"
+                items = [np.vstack(items)]
+                print(f"{msg} [{items[0].shape}]")
+            except ValueError:
+                shapes = np.array([item.shape for item in items])
+                print(f"can't stack {len(items)} {self.waiting.kind} {shapes}")
+
+            for item in items:
                 yield self.waiting.kind, self.waiting.vertices, item
             self.waiting = None
 
@@ -164,12 +169,13 @@ class GraphicsConsumer:
             self.vertices = None
             yield from self.flush()
 
+        # TODO: why wanted_depth??
         elif expr.head in (sym.SymbolPolygon, sym.SymbolPolygonBox, sym.SymbolPolygon3DBox):
-            yield from self.item(sym.SymbolPolygon, expr.elements[0], wanted_depth=2)
+            yield from self.item(sym.SymbolPolygon, expr.elements[0], wanted_depth=3)
         elif expr.head in (sym.SymbolLine, sym.SymbolLineBox, sym.SymbolLine3DBox):
-            yield from self.item(sym.SymbolLine, expr.elements[0], wanted_depth=2)
+            yield from self.item(sym.SymbolLine, expr.elements[0], wanted_depth=3)
         elif expr.head in (sym.SymbolPoint, sym.SymbolPointBox):
-            yield from self.item(sym.SymbolPoint, expr.elements[0], wanted_depth=1)
+            yield from self.item(sym.SymbolPoint, expr.elements[0], wanted_depth=2)
 
         elif expr.head == sym.SymbolHue:
             print("xxx skipping", expr.head, " for now")
