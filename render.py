@@ -1,5 +1,6 @@
 import plotly.graph_objects as go
 import util
+import numpy as np
 
 # compute axis options
 def axis(show, range, title):
@@ -18,14 +19,15 @@ class Thing:
 
     util.Timer("add_points")
     def add_points(self, vertices, points):
-        
+        print("xxx points", points)
         if self.dim == 2:
             scatter_points = go.Scatter(
                 x = points[:,0], y = points[:,1],
                 mode='markers', marker=dict(color='black', size=8)
             )
         elif self.dim == 3:
-            scatter_points = go.Scatter(
+            # TODO: not tested
+            scatter_points = go.Scatter3D(
                 x = points[:,0], y = points[:,1], z = points[:,2],
                 mode='markers', marker=dict(color='black', size=8)
             )
@@ -33,40 +35,52 @@ class Thing:
 
     util.Timer("add_lines")
     def add_lines(self, vertices, lines):
-
-        for line in lines:
-            if self.dim == 2:
-                scatter_lines = go.Scatter(
-                    x = line[:,0], y = line[:,1],
-                    mode='lines', line=dict(color='black', width=1),
-                    showlegend=False
-                )
-            elif self.dim == 3:
-                scatter_lines = go.Scatter3d(
-                    x = line[:,0], y = line[:,1], z = line[:,2],
-                    mode='lines', line=dict(color='black', width=1),
-                    showlegend=False
-                )
-            self.data.append(scatter_lines)
+        if self.dim == 2:
+            scatter_lines = go.Scatter(
+                x = lines[:,0], y = lines[:,1],
+                mode='lines', line=dict(color='black', width=1),
+                showlegend=False
+            )
+        elif self.dim == 3:
+            scatter_lines = go.Scatter3d(
+                x = lines[:,0], y = lines[:,1], z = lines[:,2],
+                mode='lines', line=dict(color='black', width=1),
+                showlegend=False
+            )
+        self.data.append(scatter_lines)
 
     # TODO: move triangulation inside?
     util.Timer("add_mesh")
-    def add_mesh(self, vertices, polys):
+    def add_polys(self, vertices, polys):
 
-        # TODO: 2d case, e.g. DensityPlot?
         if self.dim==3:
+
+            if vertices is None:
+                with util.Timer("make vertices"):
+                    vertices = polys.reshape(-1, dim)
+                    polys = np.arange(len(vertices)).reshape(mesh.shape[:-1])
+
+            with util.Timer("triangulate"):
+                ijks = []
+                ngon = polys.shape[1]
+                for i in range(1, ngon-1):
+                    inx = [0, i, i+1]
+                    tris = polys[:, inx]
+                    ijks.extend(tris)
+                ijks = np.array(ijks)
+
             mesh = go.Mesh3d(
                 x=vertices[:,0], y=vertices[:,1], z=vertices[:,2],
-                i=polys[:,0], j=polys[:,1], k=polys[:,2],
+                i=ijks[:,0], j=ijks[:,1], k=ijks[:,2],
                 # TODO: hmm, colorscale is figure-level, isn't it?
                 showscale=self.options.showscale,
                 colorscale=self.options.colorscale,
                 colorbar=dict(thickness=10), intensity=vertices[:,2],
                 hoverinfo="none"
             )
+
         elif self.dim==2:
             # this is hacky because
-            # 1) names are funky given indexing - rename
             # 2) use of points to approximate mesh
             # 2a) at least choose a good size and shape for the points that works for square mesh
             # 3) use centroid, probably

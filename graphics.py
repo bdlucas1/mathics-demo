@@ -176,8 +176,14 @@ class GraphicsConsumer:
         while depth(items) < wanted_depth:
             items = [items]
 
-        # each item is homogeneous so we can make it an array
+        # each item must be homogeneous so we can make it an array
         items = [np.array(item) for item in items]
+
+        # stack items if possible for more efficent processing
+        try:
+            items = [np.vstack(items)]
+        except ValueError:
+            print("ugh, can't stack")
 
         # convert 1-based indexes to 0-based if in GraphicsComplex
         if self.vertices is not None:
@@ -197,6 +203,7 @@ class GraphicsConsumer:
         """ Flush any waiting items """
         if self.waiting is not None:
             yield self.waiting
+            self.waiting = None
 
     def process(self, expr):
 
@@ -230,8 +237,6 @@ class GraphicsConsumer:
             print("xxx skipping", expr.head, " for now")
         else:
             raise ValueError(f"unknown {expr}")
-
-
             
 
     def items(self):
@@ -249,45 +254,15 @@ def layout_GraphicsXBox(fe, expr, dim):
     thing = render.Thing(fe, dim, graphics.options)
 
     for i, (kind, vertices, items) in enumerate(graphics.items()):
-
-        if kind is SymbolPolygon:
-
-            # try stacking the items into a single array for more efficient processing
-            # this works if all are the same degree poly, which will be typical
-            try:
-                #print("xxx stacking", len(items), "items; shape of first is", items[0].shape)
-                items = [np.vstack(items)]
-            except ValueError:
-                print("ugh, can't stack")
-
-            for mesh in items:
-
-                #print("xxx mesh", mesh.shape)
-                if vertices is None:
-                    with util.Timer("make vertices"):
-                        vertices = mesh.reshape(-1, dim)
-                        mesh = np.arange(len(vertices)).reshape(mesh.shape[:-1])
-
-                with util.Timer("triangulate"):
-                    ijks = []
-                    ngon = mesh.shape[1]
-                    for i in range(1, ngon-1):
-                        inx = [0, i, i+1]
-                        tris = mesh[:, inx]
-                        ijks.extend(tris)
-                    ijks = np.array(ijks)
-
-                thing.add_mesh(vertices, ijks)
-
-        elif kind is SymbolLine:
-
-            thing.add_lines(vertices, items)
-
-        elif kind is SymbolPoint:
-            thing.add_points(vertices, np.array(items))
-
-        else:
-            raise NotImplementedError(f"{kind}")
+        for item in items:
+            if kind is SymbolPolygon:
+                thing.add_polys(vertices, item)
+            elif kind is SymbolLine:
+                thing.add_lines(vertices, item)
+            elif kind is SymbolPoint:
+                thing.add_points(vertices, item)
+            else:
+                raise NotImplementedError(f"{kind}")
 
     figure = thing.figure()
     layout = mode.graph(figure, graphics.options.height)
