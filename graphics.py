@@ -202,7 +202,8 @@ class GraphicsConsumer:
     def flush(self):
         """ Flush any waiting items """
         if self.waiting is not None:
-            yield self.waiting
+            for item in self.waiting.items:
+                yield self.waiting.kind, self.waiting.vertices, item
             self.waiting = None
 
     def process(self, expr):
@@ -253,16 +254,15 @@ def layout_GraphicsXBox(fe, expr, dim):
 
     thing = render.Thing(fe, dim, graphics.options)
 
-    for i, (kind, vertices, items) in enumerate(graphics.items()):
-        for item in items:
-            if kind is SymbolPolygon:
-                thing.add_polys(vertices, item)
-            elif kind is SymbolLine:
-                thing.add_lines(vertices, item)
-            elif kind is SymbolPoint:
-                thing.add_points(vertices, item)
-            else:
-                raise NotImplementedError(f"{kind}")
+    for i, (kind, vertices, item) in enumerate(graphics.items()):
+        if kind is SymbolPolygon:
+            thing.add_polys(vertices, item)
+        elif kind is SymbolLine:
+            thing.add_lines(vertices, item)
+        elif kind is SymbolPoint:
+            thing.add_points(vertices, item)
+        else:
+            raise NotImplementedError(f"{kind}")
 
     figure = thing.figure()
     layout = mode.graph(figure, graphics.options.height)
