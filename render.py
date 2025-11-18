@@ -4,12 +4,13 @@ import plotly.graph_objects as go
 import util
 
 
-# compute axis options
-def axis(show, range, title):
-    axis = dict(showspikes=False, ticks="outside", range=range, title=title, linecolor="black")
-    if not show:
-        axis |= dict(visible=False, showline=False, ticks=None, showticklabels=False)
-    return axis
+# TODO: move to consumer
+def need_vertices(vertices, items):
+    if vertices is None:
+        with util.Timer("make vertices"):
+            vertices = items.reshape(-1, items.shape[-1])
+            items = np.arange(len(vertices)).reshape(items.shape[:-1])
+    return vertices, items
 
 class FigureBuilder:
 
@@ -57,10 +58,8 @@ class FigureBuilder:
 
         if self.dim==3:
 
-            if vertices is None:
-                with util.Timer("make vertices"):
-                    vertices = polys.reshape(-1, self.dim)
-                    polys = np.arange(len(vertices)).reshape(polys.shape[:-1])
+            vertices, polys = need_vertices(vertices, polys)
+
 
             with util.Timer("triangulate"):
                 ijks = []
@@ -111,6 +110,12 @@ class FigureBuilder:
 
     util.Timer("figure")
     def figure(self):
+
+        def axis(show, range, title):
+            axis = dict(showspikes=False, ticks="outside", range=range, title=title, linecolor="black")
+            if not show:
+                axis |= dict(visible=False, showline=False, ticks=None, showticklabels=False)
+            return axis
 
         if self.dim == 2:
             layout = go.Layout(
