@@ -1,35 +1,41 @@
 import os
 
+from mathics.builtin.box.expression import BoxExpression
+from mathics.builtin.box.graphics import LineBox
+from mathics.core.attributes import A_HOLD_ALL, A_HOLD_FIRST, A_PROTECTED
+from mathics.core.symbols import (Symbol, SymbolList, SymbolPlus, SymbolPower,
+                                  SymbolTimes, strip_context)
+from mathics.core.systemsymbols import (SymbolAbs, SymbolArcTan, SymbolCos,
+                                        SymbolE, SymbolFractionBox,
+                                        SymbolGamma, SymbolGrid, SymbolHold,
+                                        SymbolI, SymbolMakeBoxes,
+                                        SymbolMathMLForm, SymbolOutputForm,
+                                        SymbolPi, SymbolRow, SymbolRowBox,
+                                        SymbolRule, SymbolSin, SymbolSqrt,
+                                        SymbolSqrtBox, SymbolStandardForm,
+                                        SymbolSuperscriptBox, SymbolTeXForm,
+                                        SymbolTraditionalForm)
+
 #
 # symbols etc. are hidden away in a confusing array of packages and modules,
 # and also not a big fan of the from...import... pattern, so hide that all away here
 # for now, to make writing the demo a bit easier
 #
 
-from mathics.core.symbols import Symbol, SymbolList, SymbolPlus, SymbolTimes, SymbolPower, SymbolList, strip_context
-from mathics.core.systemsymbols import SymbolSin, SymbolCos, SymbolArcTan, SymbolSqrt, SymbolAbs, SymbolGamma, \
-    SymbolRule, SymbolI, SymbolE, SymbolPi, SymbolRow, SymbolGrid, SymbolMakeBoxes, \
-    SymbolTraditionalForm, SymbolStandardForm, SymbolMathMLForm, SymbolOutputForm, SymbolTeXForm, \
-    SymbolRowBox, SymbolFractionBox, SymbolSqrtBox, SymbolSuperscriptBox, SymbolHold
-from mathics.core.attributes import A_HOLD_FIRST, A_PROTECTED, A_HOLD_ALL
 
-from mathics.builtin.box.graphics import LineBox
-from mathics.builtin.box.expression import BoxExpression
 
 try:
     from mathics.core.atoms import NumericArray
 except:
     pass
 
-from mathics.core.atoms import Integer, Real, Complex, String
-from mathics.core.list import ListExpression
-from mathics.core.expression import Expression
-from mathics.session import MathicsSession, Evaluation
-
+from mathics.core.atoms import Complex, Integer, Real, String
 from mathics.core.builtin import Builtin
+from mathics.core.convert.sympy import SympyExpression, expression_to_sympy
+from mathics.core.expression import Expression
+from mathics.core.list import ListExpression
 from mathics.core.load_builtin import add_builtins
-
-from mathics.core.convert.sympy import expression_to_sympy, SympyExpression
+from mathics.session import Evaluation, MathicsSession
 
 #
 # where to find these?

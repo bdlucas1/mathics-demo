@@ -12,12 +12,13 @@ So the net result will be either a dash or ipywidgets data structure
 that can be displayed by the front-end.
 """
 
+import mathics.core.formatter as fmt
+
 import graphics
 import mcs
 import mode
 import util
 
-import mathics.core.formatter as fmt
 
 def wrap_math(s):
     return mode.latex(s) if isinstance(s, str) else s

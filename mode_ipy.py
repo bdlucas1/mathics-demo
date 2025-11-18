@@ -4,16 +4,17 @@
 #
 
 
-import ipywidgets as ipw
 import time
+
+# load our stylesheet, shared with dash mode for consistency
+import IPython.display as ipd
+import ipywidgets as ipw
 
 import layout as lt
 import mcs
 import mode
 import util
 
-# load our stylesheet, shared with dash mode for consistency
-import IPython.display as ipd
 try:
     file = open("assets/app.css")
 except:

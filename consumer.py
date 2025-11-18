@@ -1,10 +1,11 @@
-from typing import Optional
 import collections
-import core
-import numpy as np
 import os
-import sym
+from typing import Optional
 
+import numpy as np
+
+import core
+import sym
 
 #
 # traverse a Graphics or Graphics3D expression and collect points, lines, and triangles

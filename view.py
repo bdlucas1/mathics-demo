@@ -5,6 +5,7 @@ import subprocess
 import sys
 import time
 import webbrowser
+
 import webview
 
 parser = argparse.ArgumentParser(description="Graphics demo")

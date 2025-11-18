@@ -1,13 +1,15 @@
-import dash
 import sys
 import threading
 import traceback
-import util
+
+import dash
 import werkzeug
 
 import layout as lt
 import mcs
-import mode # really just need mode_dash
+import mode  # really just need mode_dash
+import util
+
 
 # common to ShellFrontEnd and BrowserFrontEnd
 class DashFrontEnd:

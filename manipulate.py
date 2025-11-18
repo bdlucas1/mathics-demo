@@ -1,17 +1,16 @@
-import collections 
+import collections
 import itertools
-import numpy as np
 import os
 
+import numpy as np
 from mathics.core.builtin import Builtin
 from mathics.core.load_builtin import add_builtins
 
 import layout as lt
 import mcs
 import mode
-import util
 import render
-
+import util
 
 #
 # Manipulate builtin

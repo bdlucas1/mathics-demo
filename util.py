@@ -4,9 +4,10 @@ import time
 import traceback
 import urllib.parse
 import webbrowser
+
 import webview
-from mathics.timing import *
 from mathics.core.util import *
+from mathics.timing import *
 
 import mcs
 

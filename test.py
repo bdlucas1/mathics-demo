@@ -1,13 +1,15 @@
 import argparse
-import core
-import sym
-import layout as lt
-import util
-import dash.dcc
 import os
 import sys
-import cv2
 import threading
+
+import cv2
+import dash.dcc
+
+import core
+import layout as lt
+import sym
+import util
 
 parser = argparse.ArgumentParser(description="Mathics3 graphics test")
 #parser.aad_argument("--accept", type=bool, action-"store_true")

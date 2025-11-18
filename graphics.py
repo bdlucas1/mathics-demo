@@ -4,23 +4,22 @@ These functions are called by expression_to_layout in layout.py; see
 comment there for general explanation of layouts.
 """
 
-import collections 
+import collections
 import itertools
-import numpy as np
 import os
 
-import core
-import sym
-
-from consumer import GraphicsConsumer
-
+import numpy as np
 from mathics.core.builtin import Builtin
 from mathics.core.load_builtin import add_builtins
 
+import core
 import layout as lt
 import mode
-import util
 import render
+import sym
+import util
+from consumer import GraphicsConsumer
+
 
 def layout_GraphicsXBox(fe, expr, dim):
 

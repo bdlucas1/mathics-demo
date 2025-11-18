@@ -1,6 +1,8 @@
-import plotly.graph_objects as go
-import util
 import numpy as np
+import plotly.graph_objects as go
+
+import util
+
 
 # compute axis options
 def axis(show, range, title):

@@ -3,15 +3,17 @@
 # good for browser and shell front ends
 #
 
-import dash
 import itertools
-import numpy as np
 import time
+
+import dash
+import numpy as np
 
 import layout as lt
 import mcs
 import mode
 import util
+
 
 def wrap(s):
     layout = dash.html.Div(s)
@@ -147,8 +149,9 @@ def manipulate(init_target_layout, sliders, eval_and_layout):
 #
 
 def exec_js(js):
-    import dash_extensions # causes problems in some env, only import if used
     import urllib
+
+    import dash_extensions  # causes problems in some env, only import if used
     params = urllib.parse.urlencode(dict(js=js))
     url = f"/assets/exec_js.js?{params}"
     return dash_extensions.DeferScript(src=url)

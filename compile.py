@@ -1,8 +1,9 @@
-import sympy
 import scipy
+import sympy
 
 import mcs
 import util
+
 
 def hyppfq(p, q, x):
     if len(p) == 1 and len(q) == 1:
