@@ -25,6 +25,53 @@ import sym
 
 Waiting = collections.namedtuple("Waiting", ["kind", "vertices", "items"])
 
+class GraphicsOptions:
+
+    def __init__(self, fe, expr, dim):
+
+        options = expr.get_option_values(expr.elements[1:])
+
+        def get_option(name, want_list=None):
+            x = options[name]
+            x = x.to_python()
+            auto = lambda x: None if x=="System`Automatic" else x
+            if want_list:
+                if not isinstance(x, (list,tuple)):
+                    x = [x] * want_list
+                x.extend([None] * (want_list - len(x)))
+                x = [auto(xx) for xx in x]
+            else:
+                x = auto(x)
+            #print(name, x)
+            return x
+
+        # TODO
+        axes_style = get_option("System`AxesStyle", 3)
+        background = get_option("System`Background")
+        label_style = get_option("System`LabelStyle")
+        plot_range_padding = get_option("System`PlotRangePadding")
+        tick_style = get_option("System`TicksStyle", 3)
+        if dim==3:
+            box_ratios = get_option("System`BoxRatios", 3)
+            lighting = get_option("System`Lighting")
+            viewpoint = get_option("System`ViewPoint", 3)
+        # TODO: add showscale, colorscale, boxed
+
+        # Axes
+        self.axes = get_option("System`Axes", 3)
+
+        # ImageSize, AspectRatio
+        # TODO: pass inside_row, inside_list flags in the {} below - need a layout_options arg that we pass down
+        self.image_size = expr._get_image_size({}, options, None)[0:2]
+        
+        # PlotRange
+        self.plot_range = get_option("System`PlotRange", 3)
+
+        #for n, v in options.items(): print(n, v)
+        #for n, v in self.__dict__.items(): print(n, v)
+
+
+
 class GraphicsConsumer:
 
     # if None, we are not in a GraphicsComplex, and a coordinate is a list of xy[z]
@@ -34,7 +81,7 @@ class GraphicsConsumer:
     # this coalesces consecutive items of the same kind
     waiting = None
 
-    def __init__(self, expr):
+    def __init__(self, fe, expr):
         assert expr.head in (sym.SymbolGraphics, sym.SymbolGraphics3D, sym.SymbolGraphicsBox, sym.SymbolGraphics3DBox)
 
         self.dim = 3 if expr.head in (sym.SymbolGraphics3D, sym.SymbolGraphics3DBox) else 2
@@ -42,62 +89,10 @@ class GraphicsConsumer:
         self.vertices = None
         self.graphics = expr.elements[0]
 
-        # collect options
-        class Options:
-            pass
-        self.options = Options()
-
         # TODO: these are not being passed through
+        self.options = GraphicsOptions(fe, expr, self.dim)
         self.options.showscale = False
         self.options.colorscale = "viridis"
-
-        def want_list(value, n=self.dim):
-            if isinstance(value, list):
-                assert len(value) == self.dim
-                value = [None if v == "System`Automatic" else v for v in value]
-            else:
-                value = [value] * n
-            return value
-
-        for rule in expr.elements[1:]:
-            assert rule.head == sym.SymbolRule
-            name = rule.elements[0]
-            value = rule.elements[1].to_python()
-            if value == "System`Automatic":
-                value = None
-            if name == sym.SymbolAxes:
-                value = want_list(value)
-                # TODO: assume bool or Automatic are only options
-                value = [v if isinstance(v,bool) else True for v in value]
-                self.options.axes = value
-            elif name == sym.SymbolAspectRatio:
-                assert isinstance(value, (int,float))
-                # TODO use 
-            elif name == sym.SymbolImageSize:
-                if value is None:
-                    value = (300, 300)
-                else:
-                    value = want_list(value, 2)
-                    assert isinstance(value[0], (int,float))
-                self.options.width, self.options.height = value
-            elif name == sym.SymbolPlotRange:
-                # TODO: what is the meaning in Graphics? and why is original value not passed through?
-                value = want_list(value)
-                # TODO ugh, don't unpack
-                if self.dim == 3:
-                    self.options.x_range, self.options.y_range, self.options.z_range = value
-                else:
-                    self.options.x_range, self.options.y_range = value
-            elif name in (
-                    sym.SymbolAxesStyle, sym.SymbolBackground, sym.SymbolBoxRatios, sym.SymbolLabelStyle,
-                    sym.SymbolLighting, sym.SymbolPlotRangePadding, sym.SymbolTicksStyle, sym.SymbolViewPoint,
-                    
-            ):
-                pass
-                # TODO: use
-            else:
-                #raise ValueError(f"unknown rule {name}")
-                print(f"unknown rule {name}")
 
 
     def process_array(self, array):

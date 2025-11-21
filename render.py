@@ -121,22 +121,22 @@ class FigureBuilder:
             layout = go.Layout(
                 margin = dict(l=0, r=0, t=0, b=0),
                 plot_bgcolor='rgba(0,0,0,0)',
-                width=self.options.width,
-                height=self.options.height,
-                xaxis = axis(self.options.axes[0], self.options.x_range, None),
-                yaxis = axis(self.options.axes[1], self.options.y_range, None),
+                width=self.options.image_size[0],
+                height=self.options.image_size[1],
+                xaxis = axis(self.options.axes[0], self.options.plot_range[0], None),
+                yaxis = axis(self.options.axes[1], self.options.plot_range[1], None),
             )
 
         elif self.dim == 3:
             layout = go.Layout(
                 margin = dict(l=0, r=0, t=0, b=0),
                 plot_bgcolor='rgba(0,0,0,0)',
-                width=self.options.width,
-                height=self.options.height,
+                width=self.options.image_size[0],
+                height=self.options.image_size[1],
                 scene = dict(
-                    xaxis = axis(self.options.axes[0], range=self.options.x_range, title="x"),
-                    yaxis = axis(self.options.axes[1], range=self.options.y_range, title="y"),
-                    zaxis = axis(self.options.axes[2], range=self.options.z_range, title="z"),
+                    xaxis = axis(self.options.axes[0], range=self.options.plot_range[0], title="x"),
+                    yaxis = axis(self.options.axes[1], range=self.options.plot_range[1], title="y"),
+                    zaxis = axis(self.options.axes[2], range=self.options.plot_range[2], title="z"),
                     aspectmode="cube",
                 )
             )

@@ -4,6 +4,7 @@ import os
 import sys
 import threading
 
+import numpy as np
 import cv2
 import dash.dcc
 
@@ -38,10 +39,25 @@ def differ(im1, im2):
     elif not (im1 - im2 == 0).all():
         difference = f"images differ"
 
+    def pad(img, shape):
+        return cv2.resize(img, shape[0:2])
+        """
+        print(type(shape),type(img.shape))
+        if img.shape == shape:
+            return img
+        shape = np.maximum(img.shape, shape)
+        new_img = np.full(shape, 0)
+        new_img[(0,0):img.shape] = img
+        return new_img
+        """
+
     if difference:
         if im1 is not None: cv2.imshow("im1", im1)
         if im2 is not None: cv2.imshow("im2", im2)
-        if im1 is not None and im2 is not None: cv2.imshow("diff", abs(im2-im1))
+        if im1 is not None and im2 is not None:
+            #im1 = pad(im1, im2.shape)
+            im2 = pad(im2, im1.shape)
+            cv2.imshow("diff", abs(im2-im1))
         print(difference)
         print("press any key to continue")
         cv2.waitKey(0)

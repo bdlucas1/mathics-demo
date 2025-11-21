@@ -23,7 +23,7 @@ from consumer import GraphicsConsumer
 
 def layout_GraphicsBox(fe, expr, dim):
 
-    graphics = GraphicsConsumer(expr)
+    graphics = GraphicsConsumer(fe, expr)
 
     builder = render.FigureBuilder(fe, dim, graphics.options)
 
@@ -38,7 +38,7 @@ def layout_GraphicsBox(fe, expr, dim):
             raise NotImplementedError(f"{kind}")
 
     figure = builder.figure()
-    layout = mode.graph(figure, graphics.options.height)
+    layout = mode.graph(figure, graphics.options.image_size[1])
     return layout
 
 #

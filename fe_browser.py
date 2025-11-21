@@ -11,6 +11,7 @@ import mode  # really just need mode_dash
 import sym
 import util
 
+from mathics.eval.drawing.plot_compile import CompileError
 
 # common to ShellFrontEnd and BrowserFrontEnd
 class DashFrontEnd:
@@ -108,8 +109,10 @@ class BrowserFrontEnd(DashFrontEnd):
                 start, stop = [int(x) for x in str(oops)[1:-1].split(",")]
                 print("xxx start stop", start, stop)
                 result = f"syntax error {str(oops)}:\n" + s[:start] + ">>>" +  s[start:stop] + "<<<" + s[stop:]
-            except Exception as e:
-                result = str(e)
+            except CompileError as oops:
+                result = str(oops)
+            except Exception as oops:
+                result = str(oops)
                 util.print_exc_reversed()
 
         # text output
