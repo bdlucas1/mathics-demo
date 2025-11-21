@@ -1,0 +1,32 @@
+option				default			nondefault		bad
+Axes				True			False			{}
+BoundaryStyle			Automatic
+BoxRatios			{1,1,0.4}		{1,2,3}			"foo"
+ClippingStyle			Automatic
+ColorFunction			Automatic
+ColorFunctionScaling		True			False			"bing"
+EvaluationMonitor		None
+Exclusions			Automatic
+ExclusionsStyle			None
+Filling				None
+FillingStyle			Opacity[0.5]
+LabelingSize			Automatic
+MaxRecursion			Automatic
+Mesh				Automatic
+MeshFunctions			{#1&,#2&}
+MeshShading			None
+MeshStyle			Automatic
+Method				Automatic
+NormalsFunction			Automatic
+PerformanceGoal			$PerformanceGoal
+PlotLabels			None
+PlotLegends			None
+PlotPoints			Automatic
+PlotRange			{Full,Full,Automatic}
+PlotStyle			Automatic
+PlotTheme			$PlotTheme
+RegionFunction			(True&)
+ScalingFunctions		None
+TextureCoordinateFunction	Automatic
+TextureCoordinateScaling	True
+WorkingPrecision		MachinePrecision

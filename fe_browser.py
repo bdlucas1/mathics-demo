@@ -95,14 +95,21 @@ class BrowserFrontEnd(DashFrontEnd):
 
         result = None
 
+        from mathics_scanner.errors import InvalidSyntaxError
+
         with util.Timer(f"total parse+eval+layout"):
             try:
                 expr = self.session.parse(s)
                 if expr:
                     expr = expr.evaluate(self.session.evaluation)
                     result = lt.expression_to_layout(self, expr)
+            except InvalidSyntaxError as oops:
+                # uggh
+                start, stop = [int(x) for x in str(oops)[1:-1].split(",")]
+                print("xxx start stop", start, stop)
+                result = f"syntax error {str(oops)}:\n" + s[:start] + ">>>" +  s[start:stop] + "<<<" + s[stop:]
             except Exception as e:
-                print(e)
+                result = str(e)
                 util.print_exc_reversed()
 
         # text output
