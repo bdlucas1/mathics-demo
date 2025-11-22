@@ -29,11 +29,13 @@ class GraphicsOptions:
 
     def __init__(self, fe, expr, dim):
 
-        options = expr.get_option_values(expr.elements[1:])
+        graphics_options = expr.get_option_values(expr.elements[1:])
 
+        # gets option "name", converting to python
+        # System`Automatic is converted to None (TODO: ok?)
+        # expands to a list of size want_list if requested
         def get_option(name, want_list=None):
-            x = options[name]
-            x = x.to_python()
+            x = graphics_options[name].to_python()
             auto = lambda x: None if x=="System`Automatic" else x
             if want_list:
                 if not isinstance(x, (list,tuple)):
@@ -46,11 +48,11 @@ class GraphicsOptions:
             return x
 
         # TODO
-        axes_style = get_option("System`AxesStyle", 3)
+        axes_style = get_option("System`AxesStyle", dim)
         background = get_option("System`Background")
         label_style = get_option("System`LabelStyle")
         plot_range_padding = get_option("System`PlotRangePadding")
-        tick_style = get_option("System`TicksStyle", 3)
+        tick_style = get_option("System`TicksStyle", dim)
         if dim==3:
             box_ratios = get_option("System`BoxRatios", 3)
             lighting = get_option("System`Lighting")
@@ -61,16 +63,15 @@ class GraphicsOptions:
         self.axes = get_option("System`Axes", 3)
 
         # ImageSize, AspectRatio
-        # TODO: pass inside_row, inside_list flags in the {} below - need a layout_options arg that we pass down
-        self.image_size = expr._get_image_size({}, options, None)[0:2]
+        # TODO: pass inside_row, inside_list flags in the layout_options below - pass in
+        layout_options = {}
+        self.image_size = expr._get_image_size(layout_options, graphics_options, None)[0:2]
         
         # PlotRange
         self.plot_range = get_option("System`PlotRange", 3)
 
-        #for n, v in options.items(): print(n, v)
+        #for n, v in graphics_options.items(): print(n, v)
         #for n, v in self.__dict__.items(): print(n, v)
-
-
 
 class GraphicsConsumer:
 
