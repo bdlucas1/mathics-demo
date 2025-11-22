@@ -17,7 +17,6 @@ import sym
 #
 
 
-
 # where possible things are converted to np.ndarray
 #   (not possible e.g. in lists of items, which may be non-homogeneous)
 # indexes are converted from 1-based to 0-based TODO not yet
