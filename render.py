@@ -23,6 +23,8 @@ class FigureBuilder:
 
     util.Timer("add_points")
     def add_points(self, vertices, points):
+        if vertices is not None:
+            lines = vertices[lines]
         if self.dim == 2:
             scatter_points = go.Scatter(
                 x = points[:,0], y = points[:,1],
@@ -38,6 +40,8 @@ class FigureBuilder:
 
     util.Timer("add_lines")
     def add_lines(self, vertices, lines):
+        if vertices is not None:
+            lines = vertices[lines]
         for line in lines:
             if self.dim == 2:
                 scatter_line = go.Scatter(
@@ -108,9 +112,22 @@ class FigureBuilder:
 
         self.data.append(mesh)
 
-    util.Timer("figure")
+    @util.Timer("figure")
     def figure(self):
 
+        with util.Timer("data_range"):
+            if self.dim == 3:
+                data = np.hstack([(trace.x, trace.y, trace.z) for trace in self.data])
+            else:
+                data = np.hstack([(trace.x, trace.y) for trace in self.data])
+            data_range = np.array([data.min(axis=1), data.max(axis=1)]).T
+
+        #padding = (data_range[:,1] - data_range[:,0]) * 0.05
+        #plot-range = np.array([data_range[:,0] - padding, data_range[:,1] + padding]).T
+
+        plot_range = [s if s is not None else d for s, d in zip(self.options.plot_range, data_range)]
+
+        # TODO: make consistent with dim==3
         def axis(show, range, title):
             axis = dict(showspikes=False, ticks="outside", range=range, title=title, linecolor="black")
             if not show:
@@ -123,22 +140,37 @@ class FigureBuilder:
                 plot_bgcolor='rgba(0,0,0,0)',
                 width=self.options.image_size[0],
                 height=self.options.image_size[1],
-                xaxis = axis(self.options.axes[0], self.options.plot_range[0], None),
-                yaxis = axis(self.options.axes[1], self.options.plot_range[1], None),
+                xaxis = axis(self.options.axes[0], plot_range[0], None),
+                yaxis = axis(self.options.axes[1], plot_range[1], None),
             )
 
         elif self.dim == 3:
+
+            scene = dict(aspectmode="cube")
+
+            if self.options.boxed:
+                vertices = np.array(np.meshgrid(*plot_range)).reshape((3,-1)).T
+                lines = [(i, i^k) for i in range(8) for k in [1,2,4] if not i&k]
+                self.add_lines(vertices, lines)
+
+            for i, p in enumerate("xyz"):
+                scene[p+"axis"] = dict(
+                    visible = self.options.axes[i],
+                    range = plot_range[i],
+                    showbackground = False,
+                    title = p,
+                    showline = True,
+                    linecolor = "black",
+                    linewidth = 1,
+                    showspikes=False,
+                    ticks="outside",
+                )
             layout = go.Layout(
                 margin = dict(l=0, r=0, t=0, b=0),
                 plot_bgcolor='rgba(0,0,0,0)',
                 width=self.options.image_size[0],
                 height=self.options.image_size[1],
-                scene = dict(
-                    xaxis = axis(self.options.axes[0], range=self.options.plot_range[0], title="x"),
-                    yaxis = axis(self.options.axes[1], range=self.options.plot_range[1], title="y"),
-                    zaxis = axis(self.options.axes[2], range=self.options.plot_range[2], title="z"),
-                    aspectmode="cube",
-                )
+                scene = scene
             )
 
         with util.Timer("FigureWidget"):

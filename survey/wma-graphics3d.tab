@@ -9,7 +9,7 @@ AxesStyle		{}
 Background		None
 BaselinePosition	Automatic
 BaseStyle		{}
-Boxed			rue
+Boxed			True
 BoxRatios		Automatic
 BoxStyle		{}
 ClipPlanes		None

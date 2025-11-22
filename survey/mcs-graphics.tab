@@ -1,0 +1,10 @@
+option			default
+AspectRatio		Automatic
+Axes			False
+AxesStyle		{}
+Background		Automatic
+ImageSize		Automatic
+LabelStyle		{}
+PlotRange		Automatic
+PlotRangePadding	Automatic
+TicksStyle		{}

@@ -46,21 +46,20 @@ class GraphicsOptions:
             #print(name, x)
             return x
 
-        # TODO
-        axes_style = get_option("System`AxesStyle", dim)
-        background = get_option("System`Background")
-        label_style = get_option("System`LabelStyle")
-        plot_range_padding = get_option("System`PlotRangePadding")
-        tick_style = get_option("System`TicksStyle", dim)
-        if dim==3:
-            box_ratios = get_option("System`BoxRatios", 3)
-            lighting = get_option("System`Lighting")
-            view_point = get_option("System`ViewPoint", 3)
-        # TODO: add showscale, colorscale, boxed
-
-        #NEXT: add rest of graphics options (mindful of 2d vs 3d) to core
-        #implement: boxed, background, axes, box_ratios, viewpoint
-        #implement: vertexcolors, colorscale, hue, etc.
+        # NEXT
+        #boxed
+        #axes
+        #background
+        #axes_style
+        #label_style
+        #plot_range_padding
+        #tick_style
+        #if dim==3:
+        #    box_ratios
+        #    view_point
+        #    lighting
+        # TBD: add showscale, colorscale, boxed
+        # TBD: vertexcolors, colorscale, hue, etc.
 
         # Axes
         self.axes = get_option("System`Axes", 3)
@@ -72,11 +71,76 @@ class GraphicsOptions:
             graphics_options,
             None
         )
-        print("xxx aspect", aspect)
         self.image_size = [width * multi, height * multi * aspect]
         
         # PlotRange
         self.plot_range = get_option("System`PlotRange", 3)
+
+        if dim == 3:
+
+            # Boxed
+            self.boxed = get_option("System`Boxed")
+
+        # full set - comment out as implemented
+        alignment_point = get_option("System`AlignmentPoint")
+        aspect_ratio = get_option("System`AspectRatio")
+        axes = get_option("System`Axes")
+        axes_label = get_option("System`AxesLabel")
+        axes_origin = get_option("System`AxesOrigin")
+        axes_style = get_option("System`AxesStyle")
+        background = get_option("System`Background")
+        baseline_position = get_option("System`BaselinePosition")
+        base_style = get_option("System`BaseStyle")
+        content_selectable = get_option("System`ContentSelectable")
+        coordinates_tool_options = get_option("System`CoordinatesToolOptions")
+        epilog = get_option("System`Epilog")
+        format_type = get_option("System`FormatType")
+        frame = get_option("System`Frame")
+        frame_label = get_option("System`FrameLabel")
+        frame_style = get_option("System`FrameStyle")
+        frame_ticks = get_option("System`FrameTicks")
+        frame_ticks_style = get_option("System`FrameTicksStyle")
+        grid_lines = get_option("System`GridLines")
+        grid_lines_style = get_option("System`GridLinesStyle")
+        image_margins = get_option("System`ImageMargins")
+        image_padding = get_option("System`ImagePadding")
+        image_size = get_option("System`ImageSize")
+        label_style = get_option("System`LabelStyle")
+        method = get_option("System`Method")
+        plot_label = get_option("System`PlotLabel")
+        plot_range = get_option("System`PlotRange")
+        plot_range_clipping = get_option("System`PlotRangeClipping")
+        plot_range_padding = get_option("System`PlotRangePadding")
+        plot_region = get_option("System`PlotRegion")
+        preserve_image_options = get_option("System`PreserveImageOptions")
+        prolog = get_option("System`Prolog")
+        rotate_label = get_option("System`RotateLabel")
+        ticks = get_option("System`Ticks")
+        ticks_style = get_option("System`TicksStyle")
+        if dim == 3:
+            face_grids_style = get_option("System`FaceGridsStyle")
+            boxed = get_option("System`Boxed")
+            view_center = get_option("System`ViewCenter")
+            view_range = get_option("System`ViewRange")
+            view_vertical = get_option("System`ViewVertical")
+            touchscreen_auto_zoom = get_option("System`TouchscreenAutoZoom")
+            view_vector = get_option("System`ViewVector")
+            lighting = get_option("System`Lighting")
+            view_matrix = get_option("System`ViewMatrix")
+            view_projection = get_option("System`ViewProjection")
+            clip_planes_style = get_option("System`ClipPlanesStyle")
+            controller_linking = get_option("System`ControllerLinking")
+            view_point = get_option("System`ViewPoint")
+            axes_edge = get_option("System`AxesEdge")
+            rotation_action = get_option("System`RotationAction")
+            box_ratios = get_option("System`BoxRatios")
+            controller_path = get_option("System`ControllerPath")
+            box_style = get_option("System`BoxStyle")
+            face_grids = get_option("System`FaceGrids")
+            view_angle = get_option("System`ViewAngle")
+            spherical_region = get_option("System`SphericalRegion")
+            clip_planes = get_option("System`ClipPlanes")
+
 
         #for n, v in graphics_options.items(): print(n, v)
         #for n, v in self.__dict__.items(): print(n, v)
