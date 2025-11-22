@@ -24,16 +24,16 @@ fe = FE()
 
 fe.session = core.MathicsSession()
 
-def differ(im1, im2):
-    im1 = cv2.imread(im1) if os.path.exists(im1) else None
-    im2 = cv2.imread(im2) if os.path.exists(im2) else None
+def differ(fn_im1, fn_im2):
+    im1 = cv2.imread(fn_im1) if os.path.exists(fn_im1) else None
+    im2 = cv2.imread(fn_im2) if os.path.exists(fn_im2) else None
     
     difference = None
 
     if im1 is None:
-        difference = "im1 does not exist"
+        difference = f"im1 {fn_im1} does not exist"
     elif im2 is None:
-        difference = "im2 does not exist"
+        difference = f"im2 {fn_im2} does not exist"
     elif im1.shape != im2.shape:
         difference = f"image shapes {im1.shape} {im2.shape} differ"
     elif not (im1 - im2 == 0).all():

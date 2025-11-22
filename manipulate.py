@@ -60,7 +60,7 @@ add_builtins([("System`Manipulate", Manipulate(expression=False))])
 # given a ManipulateBox Expression, compute a layout
 #
 
-def layout_ManipulateBox(fe, manipulate_expr):
+def layout_ManipulateBox(fe, manipulate_expr, layout_options):
 
     target_expr = manipulate_expr.elements[0]
     slider_expr = manipulate_expr.elements[1]

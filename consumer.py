@@ -27,7 +27,7 @@ Waiting = collections.namedtuple("Waiting", ["kind", "vertices", "items"])
 
 class GraphicsOptions:
 
-    def __init__(self, fe, expr, dim):
+    def __init__(self, dim, fe, expr, layout_options):
 
         graphics_options = expr.get_option_values(expr.elements[1:])
 
@@ -63,9 +63,13 @@ class GraphicsOptions:
         self.axes = get_option("System`Axes", 3)
 
         # ImageSize, AspectRatio
-        # TODO: pass inside_row, inside_list flags in the layout_options below - pass in
-        layout_options = {}
-        self.image_size = expr._get_image_size(layout_options, graphics_options, None)[0:2]
+        # TODO: what if anyting to do with returned aspect?
+        width, height, multi, aspect = expr._get_image_size(
+            dict(layout_options), # copy because _get_image_size modifies
+            graphics_options,
+            None
+        )
+        self.image_size = [width * multi, height * multi]
         
         # PlotRange
         self.plot_range = get_option("System`PlotRange", 3)
@@ -82,7 +86,7 @@ class GraphicsConsumer:
     # this coalesces consecutive items of the same kind
     waiting = None
 
-    def __init__(self, fe, expr):
+    def __init__(self, fe, expr, layout_options):
         assert expr.head in (sym.SymbolGraphics, sym.SymbolGraphics3D, sym.SymbolGraphicsBox, sym.SymbolGraphics3DBox)
 
         self.dim = 3 if expr.head in (sym.SymbolGraphics3D, sym.SymbolGraphics3DBox) else 2
@@ -91,7 +95,7 @@ class GraphicsConsumer:
         self.graphics = expr.elements[0]
 
         # TODO: these are not being passed through
-        self.options = GraphicsOptions(fe, expr, self.dim)
+        self.options = GraphicsOptions(self.dim, fe, expr, layout_options)
         self.options.showscale = False
         self.options.colorscale = "viridis"
 

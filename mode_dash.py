@@ -149,23 +149,7 @@ def manipulate(init_target_layout, sliders, eval_and_layout):
 
 def exec_js(js):
     import urllib
-
     import dash_extensions  # causes problems in some env, only import if used
     params = urllib.parse.urlencode(dict(js=js))
     url = f"/assets/exec_js.js?{params}"
     return dash_extensions.DeferScript(src=url)
-
-
-#
-# TODO: this is temp for demo - should be handled by custom kernel
-# TODO: this starts a new Dash server for every evaluation
-# probably not what is wanted - use something like ShellFrontEnd?
-def eval(s):
-    expr = mode.the_fe.session.parse(s)
-    app = dash.Dash()
-    register_callbacks(app)
-    app.layout = lt.expression_to_layout(mode.the_fe, expr)
-    app.run(mode = "inline")
-    return None
-
-

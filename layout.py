@@ -19,6 +19,7 @@ import graphics
 import mode
 import sym
 import util
+from frozendict import frozendict
 
 
 def wrap_math(s):
@@ -32,15 +33,17 @@ def wrap_math(s):
 #   * a layout object representing html elements that will form a baseline-aligned row,
 #     some of which might be contain latex to be rendered by mathjax
 # 
-def row_box(fe, expr):
+def row_box(fe, expr, layout_options):
     
+    layout_options = frozendict(layout_options | dict(inside_row = True))
+
     parts = []
     s = ""
 
     # surprise! unlike a RowBox Expression, a RowBox object has elements that are not in a list!
     #for e in expr.elements[0]:
     for e in expr.elements:
-        l = _boxes_to_latex_or_layout(fe, e)
+        l = _boxes_to_latex_or_layout(fe, e, layout_options)
         if isinstance(l,str):
             s += l
         else:
@@ -56,10 +59,12 @@ def row_box(fe, expr):
     else:
         return mode.row(list(wrap_math(p) for p in parts))
 
-def grid_box(fe, expr):
+def grid_box(fe, expr, layout_options):
+
+    layout_options = frozendict(layout_options | dict(inside_row = True))
 
     def do(e):
-        layout = _boxes_to_latex_or_layout(fe, e)
+        layout = _boxes_to_latex_or_layout(fe, e, layout_options)
         layout = wrap_math(layout)
         return layout
 
@@ -87,7 +92,7 @@ special = {
 # otherwise it returns an object of some kind (via mode_ipy or mode_dash) representing an html layout.
 #
 
-def _boxes_to_latex_or_layout(fe, expr):
+def _boxes_to_latex_or_layout(fe, expr, layout_options):
 
     #util.print_stack_reversed()
     #print("xxx _boxes_to_latex_or_layout", type(expr))
@@ -99,9 +104,9 @@ def _boxes_to_latex_or_layout(fe, expr):
             return None
 
     if getattr(expr, "head", None) in layout_funs:
-        return layout_funs[expr.head](fe, expr)
+        return layout_funs[expr.head](fe, expr, layout_options)
     elif getattr(expr, "head", None) in graphics.layout_funs:
-        return graphics.layout_funs[expr.head](fe, expr)
+        return graphics.layout_funs[expr.head](fe, expr, layout_options)
     elif isinstance(expr,core.String):
         if expr.value in special:
             value = special[expr.value]
@@ -126,7 +131,7 @@ def _boxes_to_latex_or_layout(fe, expr):
 #     GraphicsComplex -> ??? GraphicsComplexBox (check W)
 #
 
-def expression_to_layout(fe, expr):
+def expression_to_layout(fe, expr, layout_options={}):
 
     """
     Our main entry point.
@@ -146,7 +151,7 @@ def expression_to_layout(fe, expr):
 
     # compute a layout, which will either be a string containing latex,
     # or an object representing an html layout
-    layout = _boxes_to_latex_or_layout(fe, boxed)
+    layout = _boxes_to_latex_or_layout(fe, boxed, layout_options)
 
     # if it's a latex string, wrap it in an object that represents an html element that invokes mathjax
     layout = wrap_math(layout)

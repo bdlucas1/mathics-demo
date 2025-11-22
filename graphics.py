@@ -21,11 +21,11 @@ import util
 from consumer import GraphicsConsumer
 
 
-def layout_GraphicsBox(fe, expr, dim):
+def layout_GraphicsBox(dim, fe, expr, layout_options):
 
-    graphics = GraphicsConsumer(fe, expr)
+    graphics = GraphicsConsumer(fe, expr, layout_options)
 
-    builder = render.FigureBuilder(fe, dim, graphics.options)
+    builder = render.FigureBuilder(dim, fe, graphics.options)
 
     for i, (kind, vertices, item) in enumerate(graphics.items()):
         if kind is sym.SymbolPolygon:
@@ -49,8 +49,8 @@ from manipulate import layout_ManipulateBox
 
 layout_funs = {
     sym.SymbolManipulateBox: layout_ManipulateBox,
-    sym.SymbolGraphicsBox: lambda *args: layout_GraphicsBox(dim=2, *args),
-    sym.SymbolGraphics3DBox: lambda *args: layout_GraphicsBox(dim=3, *args)
+    sym.SymbolGraphicsBox: lambda *args: layout_GraphicsBox(2, *args),
+    sym.SymbolGraphics3DBox: lambda *args: layout_GraphicsBox(3, *args)
 }
 
 

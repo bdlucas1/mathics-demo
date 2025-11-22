@@ -14,7 +14,8 @@ def need_vertices(vertices, items):
 
 class FigureBuilder:
 
-    def __init__(self, fe, dim, options):
+    # options are graphics_options
+    def __init__(self, dim, fe, options):
         self.fe = fe
         self.dim = dim
         self.data = []
@@ -100,7 +101,6 @@ class FigureBuilder:
             else:
                 points = polys
             points = points.reshape(-1, 2) # should take centroid of each poly
-            print("xxx", points)
             mesh = go.Scatter(
                 x=points[:,0], y=points[:,1],
                 mode='markers', marker=dict(color='black', size=8)
