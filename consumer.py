@@ -81,6 +81,10 @@ class GraphicsOptions:
             # Boxed
             self.boxed = get_option("System`Boxed")
 
+            # BoxRatios
+            self.box_ratios = get_option("System`BoxRatios")            
+
+
         # full set - comment out as implemented
         alignment_point = get_option("System`AlignmentPoint")
         aspect_ratio = get_option("System`AspectRatio")
@@ -133,7 +137,7 @@ class GraphicsOptions:
             view_point = get_option("System`ViewPoint")
             axes_edge = get_option("System`AxesEdge")
             rotation_action = get_option("System`RotationAction")
-            box_ratios = get_option("System`BoxRatios")
+            #box_ratios = get_option("System`BoxRatios")
             controller_path = get_option("System`ControllerPath")
             box_style = get_option("System`BoxStyle")
             face_grids = get_option("System`FaceGrids")

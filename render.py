@@ -115,6 +115,7 @@ class FigureBuilder:
     @util.Timer("figure")
     def figure(self):
 
+        # compute data_range
         with util.Timer("data_range"):
             if self.dim == 3:
                 data = np.hstack([(trace.x, trace.y, trace.z) for trace in self.data])
@@ -127,32 +128,42 @@ class FigureBuilder:
 
         plot_range = [s if s is not None else d for s, d in zip(self.options.plot_range, data_range)]
 
-        # TODO: make consistent with dim==3
-        def axis(show, range, title):
-            axis = dict(showspikes=False, ticks="outside", range=range, title=title, linecolor="black")
-            if not show:
-                axis |= dict(visible=False, showline=False, ticks=None, showticklabels=False)
-            return axis
-
         if self.dim == 2:
+
+            opts = {}
+            for i, p in enumerate("xy"):
+                opts[p+"axis"] = dict(
+                    visible = self.options.axes[i],
+                    showspikes = False,
+                    ticks="outside",
+                    range = self.options.plot_range[i],
+                    #title = p,
+                    linecolor = "black",
+                    #showline = False
+                    #ticks = None
+                    #showticklabels=False
+                )
+
             layout = go.Layout(
                 margin = dict(l=0, r=0, t=0, b=0),
+                title=dict(text=""),  # Explicitly set title text to an empty string
                 plot_bgcolor='rgba(0,0,0,0)',
                 width=self.options.image_size[0],
                 height=self.options.image_size[1],
-                xaxis = axis(self.options.axes[0], plot_range[0], None),
-                yaxis = axis(self.options.axes[1], plot_range[1], None),
+                **opts
             )
 
         elif self.dim == 3:
-
-            scene = dict(aspectmode="cube")
 
             if self.options.boxed:
                 vertices = np.array(np.meshgrid(*plot_range)).reshape((3,-1)).T
                 lines = [(i, i^k) for i in range(8) for k in [1,2,4] if not i&k]
                 self.add_lines(vertices, lines)
 
+            scene = dict(
+                aspectmode = "manual",
+                aspectratio = {p: self.options.box_ratios[i] for i, p in enumerate("xyz")},
+            )
             for i, p in enumerate("xyz"):
                 scene[p+"axis"] = dict(
                     visible = self.options.axes[i],
@@ -167,10 +178,10 @@ class FigureBuilder:
                 )
             layout = go.Layout(
                 margin = dict(l=0, r=0, t=0, b=0),
-                plot_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor = "red", #'rgba(0,0,0,0)',
                 width=self.options.image_size[0],
                 height=self.options.image_size[1],
-                scene = scene
+                scene = scene,
             )
 
         with util.Timer("FigureWidget"):

@@ -43,8 +43,8 @@ def differ(fn_im1, fn_im2):
         fig.canvas.manager.window.move(10, 100)
         axes = fig.subplots(1, 3)
 
-    im1 = skimage.io.imread(fn_im1) if os.path.exists(fn_im1) else None
-    im2 = skimage.io.imread(fn_im2) if os.path.exists(fn_im2) else None
+    im1 = skimage.io.imread(fn_im1)[:,:,0:3] if os.path.exists(fn_im1) else None
+    im2 = skimage.io.imread(fn_im2)[:,:,0:3] if os.path.exists(fn_im2) else None
     
     difference = None
 
@@ -77,8 +77,9 @@ def differ(fn_im1, fn_im2):
         show(0, im1, fn_im1)
         show(1, im2, fn_im2)
         if im1 is not None and im2 is not None:
-            im2 = skimage.transform.resize(im2, im1.shape[0:2])
-            show(2, abs(im2-im1).astype(int), "diff")
+            #im2 = skimage.transform.resize(im2, im1.shape[0:2])
+            diff = abs(im2-im1).astype(int)
+            show(2, diff, "diff")
 
         plt.tight_layout()
         plt.waitforbuttonpress()
