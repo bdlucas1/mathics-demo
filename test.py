@@ -5,7 +5,9 @@ import sys
 import threading
 
 import numpy as np
-import cv2
+#import cv2
+import skimage.transform
+import skimage.io
 import dash.dcc
 
 import core
@@ -21,12 +23,28 @@ args = parser.parse_args()
 class FE:
     pass
 fe = FE()
-
 fe.session = core.MathicsSession()
 
+import matplotlib
+matplotlib.use('Qt5Agg')
+matplotlib.rcParams['toolbar'] = 'None'
+
+import matplotlib.pyplot as plt
+plt.ion()
+
+fig = None
+
 def differ(fn_im1, fn_im2):
-    im1 = cv2.imread(fn_im1) if os.path.exists(fn_im1) else None
-    im2 = cv2.imread(fn_im2) if os.path.exists(fn_im2) else None
+
+    global fig
+    global axes
+    if fig is None:
+        fig = plt.figure(num="update reference image? (y/n)", figsize=(9,3))
+        fig.canvas.manager.window.move(10, 100)
+        axes = fig.subplots(1, 3)
+
+    im1 = skimage.io.imread(fn_im1) if os.path.exists(fn_im1) else None
+    im2 = skimage.io.imread(fn_im2) if os.path.exists(fn_im2) else None
     
     difference = None
 
@@ -39,28 +57,35 @@ def differ(fn_im1, fn_im2):
     elif not (im1 - im2 == 0).all():
         difference = f"images differ"
 
-    def pad(img, shape):
-        return cv2.resize(img, shape[0:2])
-        """
-        print(type(shape),type(img.shape))
-        if img.shape == shape:
-            return img
-        shape = np.maximum(img.shape, shape)
-        new_img = np.full(shape, 0)
-        new_img[(0,0):img.shape] = img
-        return new_img
-        """
-
     if difference:
-        if im1 is not None: cv2.imshow("im1", im1)
-        if im2 is not None: cv2.imshow("im2", im2)
-        if im1 is not None and im2 is not None:
-            #im1 = pad(im1, im2.shape)
-            im2 = pad(im2, im1.shape)
-            cv2.imshow("diff", abs(im2-im1))
+
         print(difference)
-        print("press any key to continue")
-        cv2.waitKey(0)
+
+        keypress = None
+        def on_keypress(event):
+            nonlocal keypress
+            keypress = event.key
+        fig.canvas.mpl_connect("key_press_event", on_keypress)
+
+        def show(i, im, name):
+            if im is not None:
+                axes[i].imshow(im)
+            axes[i].set_title(name.split("/")[-1], fontsize=10)
+            axes[i].axis("off")
+            axes[i].set_anchor("N")
+
+        show(0, im1, fn_im1)
+        show(1, im2, fn_im2)
+        if im1 is not None and im2 is not None:
+            im2 = skimage.transform.resize(im2, im1.shape[0:2])
+            show(2, abs(im2-im1).astype(int), "diff")
+
+        plt.tight_layout()
+        plt.waitforbuttonpress()
+
+        return keypress == "y"
+
+
     else:
         print("images are identical")
 
@@ -100,10 +125,9 @@ for fn in args.files:
     expr = expr.evaluate(fe.session.evaluation)
     layout = lt.expression_to_layout(fe, expr)
 
-    if differ(fn_ref, fn_test):
+    if update := differ(fn_ref, fn_test):
         failures += 1
-        response = input("update reference image? (y/n): ")
-        if response == "y":
+        if update:
             print(f"updating reference image {fn_ref}")
             with open(fn_test, "rb") as f_test:
                 img_data = f_test.read()

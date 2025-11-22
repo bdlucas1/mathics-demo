@@ -55,8 +55,12 @@ class GraphicsOptions:
         if dim==3:
             box_ratios = get_option("System`BoxRatios", 3)
             lighting = get_option("System`Lighting")
-            viewpoint = get_option("System`ViewPoint", 3)
+            view_point = get_option("System`ViewPoint", 3)
         # TODO: add showscale, colorscale, boxed
+
+        #NEXT: add rest of graphics options (mindful of 2d vs 3d) to core
+        #implement: boxed, background, axes, box_ratios, viewpoint
+        #implement: vertexcolors, colorscale, hue, etc.
 
         # Axes
         self.axes = get_option("System`Axes", 3)
@@ -68,7 +72,8 @@ class GraphicsOptions:
             graphics_options,
             None
         )
-        self.image_size = [width * multi, height * multi]
+        print("xxx aspect", aspect)
+        self.image_size = [width * multi, height * multi * aspect]
         
         # PlotRange
         self.plot_range = get_option("System`PlotRange", 3)
