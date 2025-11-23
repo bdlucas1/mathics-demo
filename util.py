@@ -5,7 +5,6 @@ import traceback
 import urllib.parse
 import webbrowser
 
-import webview
 from mathics.core.util import *
 from mathics.timing import *
 
@@ -79,6 +78,7 @@ class Browser():
         # display a browser window that fetches the current plot
         #print("showing", url)
         if self.browser == "webview":
+            import webview
             offset = 50 * self.n
             self.n += 1
             webview.create_window(url, url, x=100+offset, y=100+offset, width=600, height=800)
