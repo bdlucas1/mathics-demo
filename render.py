@@ -20,6 +20,17 @@ class FigureBuilder:
         self.dim = dim
         self.data = []
         self.options = options
+        
+        # rendering options
+        self.color = "gray"
+        self.thickness = 1.5
+
+    def set_color_rgb(self, rgb):
+        assert len(rgb) == 3 or len(rgb) == 4
+        t = "rgb" if len(rgb) == 3 else "rgba"
+        args = ','.join(str(int(c*255)) for c in rgb)
+        self.color = f"{t}({args})"
+        print("color", self.color)
 
     util.Timer("add_points")
     def add_points(self, vertices, points):
@@ -28,13 +39,13 @@ class FigureBuilder:
         if self.dim == 2:
             scatter_points = go.Scatter(
                 x = points[:,0], y = points[:,1],
-                mode='markers', marker=dict(color='black', size=8)
+                mode='markers', marker=dict(color=self.color, size=8)
             )
         elif self.dim == 3:
             # TODO: not tested
             scatter_points = go.Scatter3D(
                 x = points[:,0], y = points[:,1], z = points[:,2],
-                mode='markers', marker=dict(color='black', size=8)
+                mode='markers', marker=dict(color=self.color, size=8)
             )
         self.data.append(scatter_points)
 
@@ -46,13 +57,13 @@ class FigureBuilder:
             if self.dim == 2:
                 scatter_line = go.Scatter(
                     x = line[:,0], y = line[:,1],
-                    mode='lines', line=dict(color='black', width=1),
+                    mode='lines', line=dict(color=self.color, width=self.thickness),
                     showlegend=False
                 )
             elif self.dim == 3:
                 scatter_line = go.Scatter3d(
                     x = line[:,0], y = line[:,1], z = line[:,2],
-                    mode='lines', line=dict(color='black', width=1),
+                    mode='lines', line=dict(color=self.color, width=self.thickness),
                     showlegend=False
                 )
             self.data.append(scatter_line)
@@ -65,6 +76,9 @@ class FigureBuilder:
 
             vertices, polys = need_vertices(vertices, polys)
 
+
+            #{Hue[0.1, 0.7, 1], Hue[0.6, 0.6, 1], Hue[0.2, 0.6, .9], Hue[0, 0.7, 1], Hue[.75,0.5,1]}
+            
 
             with util.Timer("triangulate"):
                 ijks = []
@@ -79,9 +93,12 @@ class FigureBuilder:
                 x=vertices[:,0], y=vertices[:,1], z=vertices[:,2],
                 i=ijks[:,0], j=ijks[:,1], k=ijks[:,2],
                 # TODO: hmm, colorscale is figure-level, isn't it?
-                showscale=self.options.showscale,
-                colorscale=self.options.colorscale,
-                colorbar=dict(thickness=10), intensity=vertices[:,2],
+                #showscale=self.options.showscale,
+                #colorscale=self.options.colorscale,
+                #colorbar=dict(thickness=10),
+                #intensity=vertices[:,2],
+                #color = "rgb(1,.72,.3,1)",
+                color = "rgba(250,180,75,250)",
                 hoverinfo="none"
             )
 

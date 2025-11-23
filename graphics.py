@@ -27,15 +27,15 @@ def layout_GraphicsBox(dim, fe, expr, layout_options):
 
     builder = render.FigureBuilder(dim, fe, graphics.options)
 
-    for i, (kind, vertices, item) in enumerate(graphics.items()):
-        if kind is sym.SymbolPolygon:
-            builder.add_polys(vertices, item)
-        elif kind is sym.SymbolLine:
-            builder.add_lines(vertices, item)
-        elif kind is sym.SymbolPoint:
-            builder.add_points(vertices, item)
-        else:
-            raise NotImplementedError(f"{kind}")
+    switch = {
+        sym.SymbolPolygon: builder.add_polys,
+        sym.SymbolLine: builder.add_lines,
+        sym.SymbolPoint: builder.add_points,
+        sym.SymbolRGBColor: builder.set_color_rgb,
+    }
+
+    for item in graphics.items():
+        switch[item[0]](*item[1:])
 
     figure = builder.figure()
     layout = mode.graph(figure, graphics.options.image_size[1])

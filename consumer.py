@@ -162,6 +162,7 @@ class GraphicsConsumer:
         assert expr.head in (sym.SymbolGraphics, sym.SymbolGraphics3D, sym.SymbolGraphicsBox, sym.SymbolGraphics3DBox)
 
         self.dim = 3 if expr.head in (sym.SymbolGraphics3D, sym.SymbolGraphics3DBox) else 2
+        self.fe = fe
         self.expr = expr
         self.vertices = None
         self.graphics = expr.elements[0]
@@ -241,7 +242,6 @@ class GraphicsConsumer:
             self.vertices = None
             yield from self.flush()
 
-        # TODO: why wanted_depth??
         elif expr.head in (sym.SymbolPolygon, sym.SymbolPolygonBox, sym.SymbolPolygon3DBox):
             yield from self.item(sym.SymbolPolygon, expr.elements[0], wanted_depth=3)
         elif expr.head in (sym.SymbolLine, sym.SymbolLineBox, sym.SymbolLine3DBox):
@@ -249,11 +249,12 @@ class GraphicsConsumer:
         elif expr.head in (sym.SymbolPoint, sym.SymbolPointBox):
             yield from self.item(sym.SymbolPoint, expr.elements[0], wanted_depth=2)
 
-        elif expr.head == sym.SymbolHue:
-            print("xxx skipping", expr.head, " for now")
-        else:
-            raise ValueError(f"unknown {expr}")
+        elif color := core.expression_to_color(expr):
+            rgba = color.to_rgba()
+            yield (sym.SymbolRGBColor, rgba)
             
+        else:
+            print(f"uknown graphics element {expr.head}")
 
     def items(self):
 
