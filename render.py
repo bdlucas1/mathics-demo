@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.linalg as la
 import plotly.graph_objects as go
 
 import util
@@ -25,12 +26,16 @@ class FigureBuilder:
         self.color = "gray"
         self.thickness = 1.5
 
-    def set_color_rgb(self, rgb):
+    def set_color_rgb(self, rgb, ctx=None):
         assert len(rgb) == 3 or len(rgb) == 4
         t = "rgb" if len(rgb) == 3 else "rgba"
         args = ','.join(str(int(c*255)) for c in rgb)
-        self.color = f"{t}({args})"
-        print("color", self.color)
+        color = f"{t}({args})"
+        if ctx is None:
+            self.color = color
+            print("color", self.color)
+        else:
+            print(f"ctx {ctx} not supported")
 
     util.Timer("add_points")
     def add_points(self, vertices, points):
@@ -51,22 +56,32 @@ class FigureBuilder:
 
     util.Timer("add_lines")
     def add_lines(self, vertices, lines):
+
         if vertices is not None:
             lines = vertices[lines]
-        for line in lines:
-            if self.dim == 2:
-                scatter_line = go.Scatter(
-                    x = line[:,0], y = line[:,1],
-                    mode='lines', line=dict(color=self.color, width=self.thickness),
-                    showlegend=False
-                )
-            elif self.dim == 3:
-                scatter_line = go.Scatter3d(
-                    x = line[:,0], y = line[:,1], z = line[:,2],
-                    mode='lines', line=dict(color=self.color, width=self.thickness),
-                    showlegend=False
-                )
-            self.data.append(scatter_line)
+
+        # Concatenate lines, separating them with np.nan so they are
+        # drawn as multiple line segments with a break between them.
+        # We use nan instead of None so we can use nanmin and nanmax on the array.
+        single = [lines[0]]
+        for line in lines[1:]:
+            single.append([[np.nan] * self.dim])
+            single.append(line)
+        lines = np.vstack(single).reshape((-1, self.dim))
+
+        if self.dim == 2:
+            scatter_line = go.Scatter(
+                x = lines[:,0], y = lines[:,1],
+                mode='lines', line=dict(color=self.color, width=self.thickness),
+                showlegend=False
+            )
+        elif self.dim == 3:
+            scatter_line = go.Scatter3d(
+                x = lines[:,0], y = lines[:,1], z = lines[:,2],
+                mode='lines', line=dict(color=self.color, width=self.thickness),
+                showlegend=False
+            )
+        self.data.append(scatter_line)
 
     # TODO: move triangulation inside?
     util.Timer("add_mesh")
@@ -75,10 +90,6 @@ class FigureBuilder:
         if self.dim==3:
 
             vertices, polys = need_vertices(vertices, polys)
-
-
-            #{Hue[0.1, 0.7, 1], Hue[0.6, 0.6, 1], Hue[0.2, 0.6, .9], Hue[0, 0.7, 1], Hue[.75,0.5,1]}
-            
 
             with util.Timer("triangulate"):
                 ijks = []
@@ -89,18 +100,29 @@ class FigureBuilder:
                     ijks.extend(tris)
                 ijks = np.array(ijks)
 
+            lighting = dict(
+                ambient = 0.5,
+                roughness = 0.5,
+                diffuse = 1.0,
+                specular = 0.8,
+                fresnel = 0.1
+            )
+
             mesh = go.Mesh3d(
                 x=vertices[:,0], y=vertices[:,1], z=vertices[:,2],
                 i=ijks[:,0], j=ijks[:,1], k=ijks[:,2],
+                lighting = lighting,
+                lightposition = dict(x=10000, y=10000, z=10000),
                 # TODO: hmm, colorscale is figure-level, isn't it?
                 #showscale=self.options.showscale,
                 #colorscale=self.options.colorscale,
                 #colorbar=dict(thickness=10),
                 #intensity=vertices[:,2],
                 #color = "rgb(1,.72,.3,1)",
-                color = "rgba(250,180,75,250)",
+                color = self.color,
                 hoverinfo="none"
             )
+
 
         elif self.dim==2:
             # this is hacky because
@@ -138,7 +160,7 @@ class FigureBuilder:
                 data = np.hstack([(trace.x, trace.y, trace.z) for trace in self.data])
             else:
                 data = np.hstack([(trace.x, trace.y) for trace in self.data])
-            data_range = np.array([data.min(axis=1), data.max(axis=1)]).T
+            data_range = np.array([np.nanmin(data, axis=1), np.nanmax(data, axis=1)]).T
 
         #padding = (data_range[:,1] - data_range[:,0]) * 0.05
         #plot-range = np.array([data_range[:,0] - padding, data_range[:,1] + padding]).T
@@ -154,8 +176,9 @@ class FigureBuilder:
                     showspikes = False,
                     ticks="outside",
                     range = self.options.plot_range[i],
-                    #title = p,
                     linecolor = "black",
+                    linewidth = 1.5,
+                    title = None,
                     #showline = False
                     #ticks = None
                     #showticklabels=False
@@ -172,32 +195,43 @@ class FigureBuilder:
 
         elif self.dim == 3:
 
+            # Boxed
             if self.options.boxed:
                 vertices = np.array(np.meshgrid(*plot_range)).reshape((3,-1)).T
                 lines = [(i, i^k) for i in range(8) for k in [1,2,4] if not i&k]
+                # TODO: safe because this is last, but really should have push/pop?
+                self.set_color_rgb((0,0,0))
                 self.add_lines(vertices, lines)
+
+            # ViewPoint
+            vp = self.options.view_point
+            vp = vp / la.norm(vp) * la.norm((1.25, 1.25, 1.25))
+            xyz_to_dict = lambda xyz: {n: v for n, v in zip("xyz", xyz)}
+            camera = dict(eye = xyz_to_dict(vp))
 
             scene = dict(
                 aspectmode = "manual",
                 aspectratio = {p: self.options.box_ratios[i] for i, p in enumerate("xyz")},
+                camera = camera,
             )
             for i, p in enumerate("xyz"):
                 scene[p+"axis"] = dict(
                     visible = self.options.axes[i],
                     range = plot_range[i],
                     showbackground = False,
-                    title = p,
+                    title = "",
                     showline = True,
+                    showgrid = False,
                     linecolor = "black",
-                    linewidth = 1,
-                    showspikes=False,
+                    linewidth = 1.5,
+                    showspikes = False,
                     ticks="outside",
                 )
             layout = go.Layout(
                 margin = dict(l=0, r=0, t=0, b=0),
                 plot_bgcolor = "red", #'rgba(0,0,0,0)',
-                width=self.options.image_size[0],
-                height=self.options.image_size[1],
+                width = self.options.image_size[0],
+                height = self.options.image_size[1],
                 scene = scene,
             )
 

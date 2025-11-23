@@ -57,6 +57,7 @@ class BrowserFrontEnd(DashFrontEnd):
             print("===", fn)
             s = open(fn).read()
             output = self.process_input(s)
+            s = f"(* {fn} *)\n" + s
             pair = self.pair(s, output)
             init_pairs.append(pair)
         self.app.layout = dash.html.Div([*init_pairs, self.pair()], id=self.top_id)

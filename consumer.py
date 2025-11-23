@@ -84,6 +84,8 @@ class GraphicsOptions:
             # BoxRatios
             self.box_ratios = get_option("System`BoxRatios")            
 
+            # ViewPoint
+            self.view_point = get_option("System`ViewPoint")
 
         # full set - comment out as implemented
         alignment_point = get_option("System`AlignmentPoint")
@@ -134,7 +136,7 @@ class GraphicsOptions:
             view_projection = get_option("System`ViewProjection")
             clip_planes_style = get_option("System`ClipPlanesStyle")
             controller_linking = get_option("System`ControllerLinking")
-            view_point = get_option("System`ViewPoint")
+            #view_point = get_option("System`ViewPoint")
             axes_edge = get_option("System`AxesEdge")
             rotation_action = get_option("System`RotationAction")
             #box_ratios = get_option("System`BoxRatios")
@@ -230,6 +232,21 @@ class GraphicsConsumer:
 
     def process(self, expr):
 
+        def directives(ctx, expr):
+
+            print("yielding from ctx", ctx, expr.head)
+
+            if color := core.expression_to_color(expr):
+                rgba = color.to_rgba()
+                yield (sym.SymbolRGBColor, rgba, ctx)
+
+            elif expr.head == sym.SymbolEdgeForm:
+                for e in expr.elements:
+                    yield from directives("edge", e)
+
+            else:
+                print(f"uknown graphics element {expr.head}")
+
         if expr.head == sym.SymbolList:
             for e in expr:
                 yield from self.process(e)
@@ -249,12 +266,8 @@ class GraphicsConsumer:
         elif expr.head in (sym.SymbolPoint, sym.SymbolPointBox):
             yield from self.item(sym.SymbolPoint, expr.elements[0], wanted_depth=2)
 
-        elif color := core.expression_to_color(expr):
-            rgba = color.to_rgba()
-            yield (sym.SymbolRGBColor, rgba)
-            
         else:
-            print(f"uknown graphics element {expr.head}")
+            yield from directives(None, expr)
 
     def items(self):
 
