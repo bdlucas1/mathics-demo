@@ -1,11 +1,9 @@
 Manipulate[
     Plot3D[
-        {Exp[Exp[x + I y]], 1},
-        {x,-xlim,xlim}, {y,-ylim,ylim},
-        PlotRange->{Automatic, Automatic, {-2,zlim}},
-        BoxRatios->{1,1,1}
+        {Exp[Exp[x + I y]], z},
+        {x,-1.5,1.5}, {y,-6,6},
+        PlotRange->{Automatic, Automatic, {-1,1.5}},
+        BoxRatios->{1,1,1}, ViewPoint->{-2,-1,.5}
     ],
-    {{xlim,1.5}, 1, 2, 0.05},
-    {{ylim,6}, 1, 10, 0.1},
-    {{zlim,10}, 1, 50, 1}
+    {{z,1}, -1, 1.5, 0.05}
 ]
