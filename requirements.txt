@@ -2,4 +2,4 @@ dash
 frozendict
 dash_extensions
 anywidget
-
+pywebview

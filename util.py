@@ -5,9 +5,14 @@ import traceback
 import urllib.parse
 import webbrowser
 
+os.environ["MATHICS3_USE_VECTORIZED_PLOT"] = "yes"
 from mathics.core.util import *
 from mathics.timing import *
 
+try:
+    import webview
+except:
+    webview = None
 
 def print_stack_reversed(file=None):
     """Print the current stack trace, from innermost to outermost."""
@@ -73,12 +78,13 @@ class Browser():
     def __init__(self):
         self.n = 0
         self.browser = os.getenv("DEMO_BROWSER", "webview")
+        if not webview:
+            self.browser = "webbrowser"
 
     def show(self, url):
         # display a browser window that fetches the current plot
         #print("showing", url)
         if self.browser == "webview":
-            import webview
             offset = 50 * self.n
             self.n += 1
             webview.create_window(url, url, x=100+offset, y=100+offset, width=600, height=800)

@@ -33,7 +33,6 @@ class FigureBuilder:
         color = f"{t}({args})"
         if ctx is None:
             self.color = color
-            print("color", self.color)
         else:
             print(f"ctx {ctx} not supported")
 
@@ -212,7 +211,7 @@ class FigureBuilder:
             scene = dict(
                 aspectmode = "manual",
                 aspectratio = {p: self.options.box_ratios[i] for i, p in enumerate("xyz")},
-                camera = camera,
+                camera = camera
             )
             for i, p in enumerate("xyz"):
                 scene[p+"axis"] = dict(
@@ -225,7 +224,7 @@ class FigureBuilder:
                     linecolor = "black",
                     linewidth = 1.5,
                     showspikes = False,
-                    ticks="outside",
+                    ticks = "outside",
                 )
             layout = go.Layout(
                 margin = dict(l=0, r=0, t=0, b=0),
@@ -233,6 +232,8 @@ class FigureBuilder:
                 width = self.options.image_size[0],
                 height = self.options.image_size[1],
                 scene = scene,
+                showlegend = False,
+                legend = None,
             )
 
         with util.Timer("FigureWidget"):

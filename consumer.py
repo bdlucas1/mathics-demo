@@ -219,12 +219,12 @@ class GraphicsConsumer:
             # stack items if possible for more efficent processing
             items = self.waiting.items
             try:
-                msg = f"stacked {len(items)} {self.waiting.kind} to"
+                #msg = f"stacked {len(items)} {self.waiting.kind} to"
                 items = [np.vstack(items)]
-                print(f"{msg} [{items[0].shape}]")
+                #print(f"{msg} [{items[0].shape}]")
             except ValueError:
                 shapes = np.array([item.shape for item in items])
-                print(f"can't stack {len(items)} {self.waiting.kind} {shapes}")
+                #print(f"can't stack {len(items)} {self.waiting.kind} {shapes}")
 
             for item in items:
                 yield self.waiting.kind, self.waiting.vertices, item
@@ -233,8 +233,6 @@ class GraphicsConsumer:
     def process(self, expr):
 
         def directives(ctx, expr):
-
-            print("yielding from ctx", ctx, expr.head)
 
             if color := core.expression_to_color(expr):
                 rgba = color.to_rgba()
