@@ -166,9 +166,6 @@ class GraphicsConsumer:
 
         assert expr.head in (sym.SymbolGraphics, sym.SymbolGraphics3D, sym.SymbolGraphicsBox, sym.SymbolGraphics3DBox)
 
-        #print("xxx expr")
-        #util.print_expression_tree(expr)
-
         self.dim = 3 if expr.head in (sym.SymbolGraphics3D, sym.SymbolGraphics3DBox) else 2
         self.fe = fe
         self.expr = expr
@@ -188,9 +185,32 @@ class GraphicsConsumer:
             raise ValueError(f"array type is {type(array)}")
 
     def find_vertex_colors(self, expr, wanted_depth):
+
+        def to_rgb(colors):
+            if colors is None:
+                return
+            extract = lambda color: tuple(c.to_python() for c in color.elements)
+            extract = np.vectorize(extract)
+            colors = np.array(extract(colors))
+            colors = colors.transpose(1, 2, 0) # np.vectorize wonky behavior...
+            #print("xxx after to_rgb colors", colors.shape)
+            return colors
+                
         for e in expr.elements[1:]:
             if e.head is sym.SymbolRule and e.elements[0] is sym.SymbolVertexColors:
-                return self.list_or_array(e.elements[1], wanted_depth)
+                colors_expr = e.elements[1]
+                if colors_expr.head == sym.SymbolRGBColor:
+                    colors = colors_expr.elements[0]
+                    if isinstance(colors, core.NumericArray):
+                        #print(colors.value)
+                        return colors.value
+                elif colors_expr.head is sym.SymbolList:
+                    colors = self.list_or_array(colors_expr, wanted_depth)
+                    colors = np.array(colors)
+                    with util.Timer("vertex colors to rgb"):
+                        colors = np.array([to_rgb(np.array(c)) for c in colors])
+                    return colors
+
 
     def list_or_array(self, expr, wanted_depth):
 
@@ -210,14 +230,16 @@ class GraphicsConsumer:
         return array
 
 
-    def item(self, kind, expr, wanted_depth):
+    def item(self, kind, expr, wanted_depth, colors):
 
         # item is specified either as a NumericArray or as a nest List
         items_wanted_depth = wanted_depth+1 if self.vertices is None else wanted_depth
         items = self.list_or_array(expr.elements[0], items_wanted_depth)
 
         # do we have VertexColors?
-        colors = self.find_vertex_colors(expr, wanted_depth)
+        local_colors = self.find_vertex_colors(expr, wanted_depth)
+        if local_colors is not None:
+            colors = local_colors
                 
         # convert 1-based indexes to 0-based if in GraphicsComplex
         if self.vertices is not None:
@@ -247,24 +269,14 @@ class GraphicsConsumer:
                 shapes = np.array([item.shape for item in items])
                 print(f"can't stack {len(items)} {self.waiting.kind} {shapes}")
 
-            def to_rgb(colors):
-                if colors is None:
-                    print("xxx no colors")
-                    return
-                with util.Timer("to_rgb"):
-                    assert color[*[0]*len(color.shape)].head is sym.SymbolRGBColor
-                    extract = lambda color: tuple(c.to_python() for c in color.elements)
-                    extract = np.vectorize(extract)
-                    colors = np.array(extract(colors)).transpose(1, 2, 0)
-                    return colors
-                
             colors = colors if colors is not None else [None] * len(items)
             for item, color in zip(items, colors):
-                    yield self.waiting.kind, self.waiting.vertices, item, to_rgb(color)
+                #if color is not None: print("xxx yielding color", color.shape)
+                yield self.waiting.kind, self.waiting.vertices, item, color
 
             self.waiting = None
 
-    def process(self, expr):
+    def process(self, expr, colors=None):
 
         def directives(ctx, expr):
 
@@ -275,6 +287,10 @@ class GraphicsConsumer:
             elif expr.head == sym.SymbolEdgeForm:
                 for e in expr.elements:
                     yield from directives("edge", e)
+
+            elif expr.head == sym.SymbolRule:
+                # handled elsewhere
+                pass
 
             else:
                 print(f"uknown graphics element {expr.head}")
@@ -287,18 +303,17 @@ class GraphicsConsumer:
             # TODO: allow elements for array
             self.vertices = self.process_array(expr.elements[0])
             colors = self.find_vertex_colors(expr, wanted_depth = 2)
-            if colors is not None: print("xxx gc got vc", colors[0].shape)
             for e in expr.elements[1:]:
-                yield from self.process(e)
+                yield from self.process(e, colors)
             self.vertices = None
             yield from self.flush()
 
         elif expr.head in (sym.SymbolPolygon, sym.SymbolPolygonBox, sym.SymbolPolygon3DBox):
-            yield from self.item(sym.SymbolPolygon, expr, wanted_depth=3)
+            yield from self.item(sym.SymbolPolygon, expr, wanted_depth=3, colors=colors)
         elif expr.head in (sym.SymbolLine, sym.SymbolLineBox, sym.SymbolLine3DBox):
-            yield from self.item(sym.SymbolLine, expr, wanted_depth=3)
+            yield from self.item(sym.SymbolLine, expr, wanted_depth=3, colors=colors)
         elif expr.head in (sym.SymbolPoint, sym.SymbolPointBox):
-            yield from self.item(sym.SymbolPoint, expr, wanted_depth=2)
+            yield from self.item(sym.SymbolPoint, expr, wanted_depth=2, colors=colors)
 
         else:
             yield from directives(None, expr)

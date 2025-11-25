@@ -87,17 +87,9 @@ class FigureBuilder:
     util.Timer("add_mesh")
     def add_polys(self, vertices, polys, colors):
 
-        if vertices is not None: print("add_polys got vertices", vertices.shape)
-        print("add_polys got polys", polys.shape)
-
-        def to_rgb(color):
-            return f"rgb({','.join(str(c) for c in color)})"
-
-        if colors is not None:
-
-            colors = colors.astype(object)
-            with util.Timer("add_polys to_rgb"):
-                colors = np.array([[to_rgb(y) for y in x] for x in colors])
+        #if vertices is not None: print("xxx add_polys got vertices", vertices.shape)
+        #print("xxx add_polys polys", polys.shape)
+        #if colors is not None: print("xxx add_polys colors", colors.shape)
 
         if self.dim==3:
 
@@ -138,18 +130,27 @@ class FigureBuilder:
 
         elif self.dim==2:
 
+            # flatten points
             points = polys if vertices is None else vertices
-            print("init points shape", points.shape)
             points = points.reshape(-1, 2)
+            #print("xxx points after flattening", points.shape)
+
             if colors is not None:
-                colors = colors.reshape(-1)
+                # flatten colors and stringify
+                colors = colors.reshape(-1, 3)
+                #print("xxx colors after flattening", colors.shape)
+                def to_rgb(color):
+                    args = ",".join(f"{int(c*255)}" for c in color)
+                    return f"rgb({args})"
+                with util.Timer("add_polys to rgb"):
+                    colors = [to_rgb(c) for c in colors]
+                #print("xxx colors after to_rgb", len(colors), type(colors), colors[0], type(colors[0]))
             else:
                 colors = "black"
-            print("xxx points shape", points.shape)
 
             mesh = go.Scatter(
                 x=points[:,0], y=points[:,1],
-                mode='markers', marker=dict(color=colors, size=8),
+                mode='markers', marker=dict(color=colors, size=4),
             )
 
         self.data.append(mesh)
