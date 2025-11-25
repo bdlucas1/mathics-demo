@@ -24,7 +24,7 @@ import util
 # indexes are converted from 1-based to 0-based TODO not yet
 # where possible, lists of items are coalesced by kind
 
-Waiting = collections.namedtuple("Waiting", ["kind", "vertices", "items"])
+Waiting = collections.namedtuple("Waiting", ["kind", "vertices", "items", "colors"])
 
 class GraphicsOptions:
 
@@ -189,32 +189,33 @@ class GraphicsConsumer:
 
     def item(self, kind, expr, wanted_depth):
 
-        def list_or_array(expr):
+        def list_or_array(expr, wanted_depth):
+
             if isinstance(expr, core.NumericArray):
-                return expr.value
+                array = expr.value
             elif isinstance(expr, core.Expression):
-                return expr.to_python()
+                array = expr.to_python()
+
+            # make array have the desired depth
+            depth = lambda x: 1 + depth(x[0]) if isinstance(x, (list,tuple,np.ndarray)) else 0
+            while depth(array) < wanted_depth:
+                array = [array]
+
+            # array must be homogeneous so we can make it an array
+            array = [np.array(item) for item in array]
+
+            return array
 
         # item is specified either as a NumericArray or as a nest List
-        items = list_or_array(expr.elements[0])
+        items_wanted_depth = wanted_depth+1 if self.vertices is None else wanted_depth
+        items = list_or_array(expr.elements[0], items_wanted_depth)
 
         # do we have VertexColors?
+        colors = None
         for e in expr.elements[1:]:
-            print("xxx e.head", e.head)
             if e.head is sym.SymbolRule and e.elements[0] is sym.SymbolVertexColors:
-                vc = e.elements[1]
-                print("xxx vc!")
+                colors = list_or_array(e.elements[1], wanted_depth)
                 
-        # make items uniformly a list of items, never just a single item
-        depth = lambda x: 1 + depth(x[0]) if isinstance(x, (list,tuple,np.ndarray)) else 0
-        if self.vertices is None:
-            wanted_depth += 1
-        while depth(items) < wanted_depth:
-            items = [items]
-
-        # each item must be homogeneous so we can make it an array
-        items = [np.array(item) for item in items]
-
         # convert 1-based indexes to 0-based if in GraphicsComplex
         if self.vertices is not None:
             for item in items:
@@ -222,29 +223,42 @@ class GraphicsConsumer:
 
         # flush if needed, add our items to waiting items
         if self.waiting is None:
-            self.waiting = Waiting(kind, self.vertices, items)
+            self.waiting = Waiting(kind, self.vertices, items, colors)
+        # TODO: what about colors?
         elif self.waiting.kind == kind and self.waiting.vertices is self.vertices:
             self.waiting.items.extend(items)
         else:
             yield from self.flush()
-            self.waiting = Waiting(kind, self.vertices, items)
+            self.waiting = Waiting(kind, self.vertices, items, colors)
 
     def flush(self):
         """ Flush any waiting items """
         if self.waiting is not None:
 
             # stack items if possible for more efficent processing
-            items = self.waiting.items
+            items, colors = self.waiting.items, self.waiting.colors
             try:
-                #msg = f"stacked {len(items)} {self.waiting.kind} to"
                 items = [np.vstack(items)]
-                #print(f"{msg} [{items[0].shape}]")
-            except ValueError:
+                colors = [np.vstack(colors)] if colors is not None else None
+            except (ValueError, TypeError):
                 shapes = np.array([item.shape for item in items])
-                #print(f"can't stack {len(items)} {self.waiting.kind} {shapes}")
+                print(f"can't stack {len(items)} {self.waiting.kind} {shapes}")
 
-            for item in items:
-                yield self.waiting.kind, self.waiting.vertices, item
+            def to_rgb(colors):
+                if colors is None:
+                    print("xxx no colors")
+                    return
+                with util.Timer("to_rgb"):
+                    assert color[*[0]*len(color.shape)].head is sym.SymbolRGBColor
+                    extract = lambda color: tuple(c.to_python() for c in color.elements)
+                    extract = np.vectorize(extract)
+                    colors = np.array(extract(colors)).transpose(1, 2, 0)
+                    return colors
+                
+            colors = colors if colors is not None else [None] * len(items)
+            for item, color in zip(items, colors):
+                    yield self.waiting.kind, self.waiting.vertices, item, to_rgb(color)
+
             self.waiting = None
 
     def process(self, expr):

@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as la
 import plotly.graph_objects as go
+import os
 
 import util
 
@@ -37,7 +38,7 @@ class FigureBuilder:
             print(f"ctx {ctx} not supported")
 
     util.Timer("add_points")
-    def add_points(self, vertices, points):
+    def add_points(self, vertices, points, colors):
         if vertices is not None:
             lines = vertices[lines]
         if self.dim == 2:
@@ -54,7 +55,7 @@ class FigureBuilder:
         self.data.append(scatter_points)
 
     util.Timer("add_lines")
-    def add_lines(self, vertices, lines):
+    def add_lines(self, vertices, lines, colors):
 
         if vertices is not None:
             lines = vertices[lines]
@@ -84,7 +85,16 @@ class FigureBuilder:
 
     # TODO: move triangulation inside?
     util.Timer("add_mesh")
-    def add_polys(self, vertices, polys):
+    def add_polys(self, vertices, polys, colors):
+
+        def to_rgb(color):
+            return f"rgb({','.join(str(c) for c in color)})"
+
+        if colors is not None:
+
+            colors = colors.astype(object)
+            with util.Timer("add_polys to_rgb"):
+                colors = np.array([[to_rgb(y) for y in x] for x in colors])
 
         if self.dim==3:
 
@@ -124,28 +134,21 @@ class FigureBuilder:
 
 
         elif self.dim==2:
-            # this is hacky because
-            # 2) use of points to approximate mesh
-            # 2a) at least choose a good size and shape for the points that works for square mesh
-            # 3) use centroid, probably
-            # 4) use colors
-            # 5) apply the indexing thing elsewhere too
-            # 6) vertices are being generated but here we have to un-generate
-            #    make generation of vertices and ungeneration specific to each plot type
-            # 7) Timer for DensityPlot
-            # 8) it came in as quads, keep it that way - move triangulation inside
-            # 9) enough diffs that we should probably have Thing2 and Thing3
-            # 10) rename THing
-            # 11) why no axes?
-            # 12) no colors!
+
             if vertices is not None:
                 points = vertices[polys]
             else:
                 points = polys
-            points = points.reshape(-1, 2) # should take centroid of each poly
+
+            points = points.reshape(-1, 2)
+            if colors is not None:
+                colors = colors.reshape(-1)
+            else:
+                colors = "black"
+
             mesh = go.Scatter(
                 x=points[:,0], y=points[:,1],
-                mode='markers', marker=dict(color='black', size=8)
+                mode='markers', marker=dict(color=colors, size=8),
             )
 
         self.data.append(mesh)
@@ -200,7 +203,7 @@ class FigureBuilder:
                 lines = [(i, i^k) for i in range(8) for k in [1,2,4] if not i&k]
                 # TODO: safe because this is last, but really should have push/pop?
                 self.set_color_rgb((0,0,0))
-                self.add_lines(vertices, lines)
+                self.add_lines(vertices, lines, None)
 
             # ViewPoint
             vp = self.options.view_point
