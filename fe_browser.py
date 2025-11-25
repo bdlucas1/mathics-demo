@@ -52,14 +52,21 @@ class BrowserFrontEnd(DashFrontEnd):
         # initial layout is --run input plus a blank pair
         self.pair_number = 0
         self.top_id ="browser-front-end"
+
         init_pairs = []
         for fn in sys.argv[1:]:
+
+            if fn in util.methods:
+                util.switch_method(fn)
+                continue
+
             print("===", fn)
             s = open(fn).read()
             output = self.process_input(s)
             s = f"(* {fn} *)\n" + s
             pair = self.pair(s, output)
             init_pairs.append(pair)
+
         self.app.layout = dash.html.Div([*init_pairs, self.pair()], id=self.top_id)
 
         # when the hidden pair-button is "clicked", process the pair-in input and update the pair-out div

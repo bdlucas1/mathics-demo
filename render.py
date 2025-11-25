@@ -176,7 +176,7 @@ class FigureBuilder:
                     ticks="outside",
                     range = self.options.plot_range[i],
                     linecolor = "black",
-                    linewidth = 1.5,
+                    linewidth = 1,
                     title = None,
                     #showline = False
                     #ticks = None

@@ -4,6 +4,7 @@ import time
 import traceback
 import urllib.parse
 import webbrowser
+import importlib
 
 os.environ["MATHICS3_USE_VECTORIZED_PLOT"] = "yes"
 from mathics.core.util import *
@@ -100,4 +101,17 @@ class Browser():
             webview.create_window("hidden", hidden=True)
             webview.start()
 
+methods = ["CLASSIC", "VECTORIZED"]
 
+def switch_method(method):
+
+    if method == "CLASSIC":
+        try:
+            del os.environ["MATHICS3_USE_VECTORIZED_PLOT"]
+        except Exception:
+            pass
+    elif method == "VECTORIZED":
+        os.environ["MATHICS3_USE_VECTORIZED_PLOT"] = "yes"
+
+    import mathics.builtin.drawing.plot as plot
+    importlib.reload(plot)

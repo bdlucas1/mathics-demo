@@ -7,6 +7,8 @@ import numpy as np
 import core
 import sym
 
+import util
+
 #
 # traverse a Graphics or Graphics3D expression and collect points, lines, and triangles
 # as numpy arrays that are efficient to traverse
@@ -161,7 +163,11 @@ class GraphicsConsumer:
     waiting = None
 
     def __init__(self, fe, expr, layout_options):
+
         assert expr.head in (sym.SymbolGraphics, sym.SymbolGraphics3D, sym.SymbolGraphicsBox, sym.SymbolGraphics3DBox)
+
+        #print("xxx expr")
+        #util.print_expression_tree(expr)
 
         self.dim = 3 if expr.head in (sym.SymbolGraphics3D, sym.SymbolGraphics3DBox) else 2
         self.fe = fe
@@ -174,7 +180,7 @@ class GraphicsConsumer:
         self.options.showscale = False
         self.options.colorscale = "viridis"
 
-
+    # TODO: still necessary?
     def process_array(self, array):
         if isinstance(array, core.NumericArray):
             return array.value
@@ -183,11 +189,22 @@ class GraphicsConsumer:
 
     def item(self, kind, expr, wanted_depth):
 
-        if isinstance(expr, core.NumericArray):
-            items = expr.value
-        elif isinstance(expr, core.Expression):
-            items = expr.to_python()
+        def list_or_array(expr):
+            if isinstance(expr, core.NumericArray):
+                return expr.value
+            elif isinstance(expr, core.Expression):
+                return expr.to_python()
 
+        # item is specified either as a NumericArray or as a nest List
+        items = list_or_array(expr.elements[0])
+
+        # do we have VertexColors?
+        for e in expr.elements[1:]:
+            print("xxx e.head", e.head)
+            if e.head is sym.SymbolRule and e.elements[0] is sym.SymbolVertexColors:
+                vc = e.elements[1]
+                print("xxx vc!")
+                
         # make items uniformly a list of items, never just a single item
         depth = lambda x: 1 + depth(x[0]) if isinstance(x, (list,tuple,np.ndarray)) else 0
         if self.vertices is None:
@@ -258,11 +275,11 @@ class GraphicsConsumer:
             yield from self.flush()
 
         elif expr.head in (sym.SymbolPolygon, sym.SymbolPolygonBox, sym.SymbolPolygon3DBox):
-            yield from self.item(sym.SymbolPolygon, expr.elements[0], wanted_depth=3)
+            yield from self.item(sym.SymbolPolygon, expr, wanted_depth=3)
         elif expr.head in (sym.SymbolLine, sym.SymbolLineBox, sym.SymbolLine3DBox):
-            yield from self.item(sym.SymbolLine, expr.elements[0], wanted_depth=3)
+            yield from self.item(sym.SymbolLine, expr, wanted_depth=3)
         elif expr.head in (sym.SymbolPoint, sym.SymbolPointBox):
-            yield from self.item(sym.SymbolPoint, expr.elements[0], wanted_depth=2)
+            yield from self.item(sym.SymbolPoint, expr, wanted_depth=2)
 
         else:
             yield from directives(None, expr)
