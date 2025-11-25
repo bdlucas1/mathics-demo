@@ -87,6 +87,9 @@ class FigureBuilder:
     util.Timer("add_mesh")
     def add_polys(self, vertices, polys, colors):
 
+        if vertices is not None: print("add_polys got vertices", vertices.shape)
+        print("add_polys got polys", polys.shape)
+
         def to_rgb(color):
             return f"rgb({','.join(str(c) for c in color)})"
 
@@ -135,16 +138,14 @@ class FigureBuilder:
 
         elif self.dim==2:
 
-            if vertices is not None:
-                points = vertices[polys]
-            else:
-                points = polys
-
+            points = polys if vertices is None else vertices
+            print("init points shape", points.shape)
             points = points.reshape(-1, 2)
             if colors is not None:
                 colors = colors.reshape(-1)
             else:
                 colors = "black"
+            print("xxx points shape", points.shape)
 
             mesh = go.Scatter(
                 x=points[:,0], y=points[:,1],

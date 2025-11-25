@@ -187,34 +187,37 @@ class GraphicsConsumer:
         else:
             raise ValueError(f"array type is {type(array)}")
 
+    def find_vertex_colors(self, expr, wanted_depth):
+        for e in expr.elements[1:]:
+            if e.head is sym.SymbolRule and e.elements[0] is sym.SymbolVertexColors:
+                return self.list_or_array(e.elements[1], wanted_depth)
+
+    def list_or_array(self, expr, wanted_depth):
+
+        if isinstance(expr, core.NumericArray):
+            array = expr.value
+        elif isinstance(expr, core.Expression):
+            array = expr.to_python()
+
+        # make array have the desired depth
+        depth = lambda x: 1 + depth(x[0]) if isinstance(x, (list,tuple,np.ndarray)) else 0
+        while depth(array) < wanted_depth:
+            array = [array]
+
+        # array must be homogeneous so we can make it an array
+        array = [np.array(item) for item in array]
+
+        return array
+
+
     def item(self, kind, expr, wanted_depth):
-
-        def list_or_array(expr, wanted_depth):
-
-            if isinstance(expr, core.NumericArray):
-                array = expr.value
-            elif isinstance(expr, core.Expression):
-                array = expr.to_python()
-
-            # make array have the desired depth
-            depth = lambda x: 1 + depth(x[0]) if isinstance(x, (list,tuple,np.ndarray)) else 0
-            while depth(array) < wanted_depth:
-                array = [array]
-
-            # array must be homogeneous so we can make it an array
-            array = [np.array(item) for item in array]
-
-            return array
 
         # item is specified either as a NumericArray or as a nest List
         items_wanted_depth = wanted_depth+1 if self.vertices is None else wanted_depth
-        items = list_or_array(expr.elements[0], items_wanted_depth)
+        items = self.list_or_array(expr.elements[0], items_wanted_depth)
 
         # do we have VertexColors?
-        colors = None
-        for e in expr.elements[1:]:
-            if e.head is sym.SymbolRule and e.elements[0] is sym.SymbolVertexColors:
-                colors = list_or_array(e.elements[1], wanted_depth)
+        colors = self.find_vertex_colors(expr, wanted_depth)
                 
         # convert 1-based indexes to 0-based if in GraphicsComplex
         if self.vertices is not None:
@@ -283,6 +286,8 @@ class GraphicsConsumer:
         elif expr.head in (sym.SymbolGraphicsComplex, sym.SymbolGraphicsComplexBox):
             # TODO: allow elements for array
             self.vertices = self.process_array(expr.elements[0])
+            colors = self.find_vertex_colors(expr, wanted_depth = 2)
+            if colors is not None: print("xxx gc got vc", colors[0].shape)
             for e in expr.elements[1:]:
                 yield from self.process(e)
             self.vertices = None
