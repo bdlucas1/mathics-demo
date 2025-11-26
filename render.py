@@ -124,11 +124,17 @@ class FigureBuilder:
                 #intensity=vertices[:,2],
                 #color = "rgb(1,.72,.3,1)",
                 color = self.color,
+                vertexcolor = colors,
                 hoverinfo="none"
             )
 
 
         elif self.dim==2:
+
+            # Bit of a hack. There's no 2d go.Mesh, so we just do
+            # a scatter plot of the points.
+            # TODO: kind of slow in Plotly, so maybe resample to
+            # a 100x100 grid might be faster overall? But kind of low-res...
 
             # flatten points
             points = polys if vertices is None else vertices

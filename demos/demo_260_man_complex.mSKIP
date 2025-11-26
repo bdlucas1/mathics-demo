@@ -1,0 +1,10 @@
+Manipulate[
+    ComplexPlot3D[
+        ((z-E^(I z1)) (z-E^(I z2))) / (z^2 - 1),  {z, -2 - 2 I, 2 + 2 I},
+        PlotRange->{Automatic,Automatic,{0,4}}
+    ],
+    (*{{z1,Pi/2},Pi/4,3 Pi / 4,0.1},
+    {{z2,3 Pi/2},5 Pi/4,7 Pi / 4,0.1}*)
+    {{z1,1.5},1.25,1.75, 0.1},
+    {{z1,4.5},4.25,4.75, 0.1}
+]
