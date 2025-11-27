@@ -21,9 +21,10 @@ class FigureBuilder:
     def __init__(self, dim, fe, options):
         self.fe = fe
         self.dim = dim
+        self.flat = False
         self.data = []
         self.img_array = None
-        self.options = options
+        self.opts = options
         
         
         # rendering options
@@ -123,15 +124,24 @@ class FigureBuilder:
                 hoverinfo = "none"
             )
 
+            self.data.append(mesh)
 
         elif self.dim==2:
 
-            #mesh = mesh2d.mesh2d_markers(vertices, polys, colors) # 600 ms
-            mesh = mesh2d.mesh2d_opencv(vertices, polys, colors) # 70 ms, but image won't stretch
-            #mesh = mesh2d.mesh2d_3d(vertices, polys, colors) # 60 ms, but not done yet - need to rearrange code wrt layout, axes
+            if True:
+                #mesh = mesh2d.mesh2d_markers(vertices, polys, colors) # 600 ms
+                mesh = mesh2d.mesh2d_opencv(vertices, polys, colors, *self.opts.image_size) # 70 ms, but image won't stretch
+                #mesh = mesh2d.mesh2d_3d(vertices, polys, colors) # 60 ms, but not done yet - need to rearrange code wrt layout, axes
+                self.data.append(mesh)
 
-        self.data.append(mesh)
-
+            else:
+                # try doing as flat 3d projection
+                # problems: axis labels were wonky, lighting was wonky, scaling - ?
+                # if this code is removed, remove all self.flat options
+                self.dim = 3
+                self.flat = True
+                vertices = np.hstack([vertices, np.full(vertices.shape[0:2], 0.0)])
+                self.add_polys(vertices, polys, colors)
 
     @util.Timer("figure")
     def figure(self):
@@ -147,7 +157,7 @@ class FigureBuilder:
         # get plot range either from opt or from data
         plot_range = [
             opt if isinstance(opt, list) else data
-            for opt, data in zip(self.options.plot_range, data_range)
+            for opt, data in zip(self.opts.plot_range, data_range)
         ]
 
         # compute axes options
@@ -162,24 +172,29 @@ class FigureBuilder:
                 showspikes = False,
                 ticks = "outside",
                 title = None if self.dim==2 else "", # TODO: look again
-                visible = self.options.axes[i] or self.options.frame,
+                visible = self.opts.axes[i] or self.opts.frame,
             )
+            if self.dim == 2 and p == "y":
+                # for Images plotly doesn't like to scale the image to fill the figure size,
+                # so we force it to with this computation
+                dr = np.array(plot_range).T[1] - np.array(plot_range).T[0]
+                isz = self.opts.image_size
+                scaleratio = (isz[1] / isz[0]) * (dr[0] / dr[1])
+                opts |= dict(scaleanchor = "x", scaleratio = scaleratio)
             if self.dim == 3:
-                opts |= dict(
-                    showbackground = False,
-                )
+                opts |= dict(showbackground = False)
             axes_opts[p+"axis"] = opts
 
         # compute layout options
         layout_opts = dict(
             autosize = True,
-            height = self.options.image_size[1],
+            height = self.opts.image_size[1],
             legend = None,
             margin = dict(l=0, r=0, t=0, b=0),
             plot_bgcolor = 'rgba(0,0,0,0)',
             showlegend = False,
             title = dict(text=""),  # Explicitly set title text to an empty string
-            width = self.options.image_size[0],
+            width = self.opts.image_size[0],
         )
 
         if self.dim == 2:
@@ -189,7 +204,7 @@ class FigureBuilder:
         elif self.dim == 3:
 
             # Boxed
-            if self.options.boxed:
+            if not self.flat and self.opts.boxed:
                 vertices = np.array(np.meshgrid(*plot_range)).reshape((3,-1)).T
                 lines = [(i, i^k) for i in range(8) for k in [1,2,4] if not i&k]
                 # TODO: safe because this is last, but really should have push/pop?
@@ -197,14 +212,21 @@ class FigureBuilder:
                 self.add_lines(vertices, lines, None)
 
             # ViewPoint
-            vp = self.options.view_point
-            vp = vp / la.norm(vp) * la.norm((1.25, 1.25, 1.25))
             xyz_to_dict = lambda xyz: {n: v for n, v in zip("xyz", xyz)}
-            camera = dict(eye = xyz_to_dict(vp))
+            if not self.flat:
+                vp = self.opts.view_point
+                vp = vp / la.norm(vp) * la.norm((1.25, 1.25, 1.25))
+                camera = dict(eye = xyz_to_dict(vp))
+            else:
+                camera = dict(
+                    eye = xyz_to_dict([0, 0, -1]),
+                    projection_type = "orthographic"
+                )
 
+            box_ratios = self.opts.box_ratios if not self.flat else [1, 1, 1]
             scene = dict(
                 aspectmode = "manual",
-                aspectratio = {p: self.options.box_ratios[i] for i, p in enumerate("xyz")},
+                aspectratio = {p: box_ratios[i] for i, p in enumerate("xyz")},
                 camera = camera,
                 **axes_opts
             )

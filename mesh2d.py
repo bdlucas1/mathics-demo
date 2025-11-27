@@ -6,9 +6,11 @@ import plotly.graph_objects as go
 
 
 @util.Timer("mesh2d_opencv")
-def mesh2d_opencv(vertices, polys, colors):
+def mesh2d_opencv(vertices, polys, colors, nx=200, ny=200):
 
+    # this matches the default plotpoints so let's just use that
     nx = ny = 200
+    #nx, ny = int(nx), int(ny)
 
     # images of requested size
     img = np.full((nx,ny,3), 0, dtype=np.uint8)
