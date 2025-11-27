@@ -154,7 +154,7 @@ class FigureBuilder:
                 data = np.hstack([(trace.x, trace.y) for trace in self.data])
             data_range = np.array([np.nanmin(data, axis=1), np.nanmax(data, axis=1)]).T
 
-        # get plot range either from opt or from data
+        # get plot range either from opt or from data range
         plot_range = [
             opt if isinstance(opt, list) else data
             for opt, data in zip(self.opts.plot_range, data_range)
@@ -177,7 +177,9 @@ class FigureBuilder:
             if self.dim == 2 and p == "y":
                 # for Images plotly doesn't like to scale the image to fill the figure size,
                 # so we force it to with this computation
-                dr = np.array(plot_range).T[1] - np.array(plot_range).T[0]
+                # TODO: is there a single boolean that will make it do this?
+                pr = np.array(plot_range).T
+                dr = pr[1] - pr[0]
                 isz = self.opts.image_size
                 scaleratio = (isz[1] / isz[0]) * (dr[0] / dr[1])
                 opts |= dict(scaleanchor = "x", scaleratio = scaleratio)
@@ -223,6 +225,7 @@ class FigureBuilder:
                     projection_type = "orthographic"
                 )
 
+            # BoxRatios
             box_ratios = self.opts.box_ratios if not self.flat else [1, 1, 1]
             scene = dict(
                 aspectmode = "manual",
@@ -230,18 +233,19 @@ class FigureBuilder:
                 camera = camera,
                 **axes_opts
             )
+
+            # combine above into final go_layout
             go_layout = go.Layout(**layout_opts, scene = scene)
 
+        # combine data and g_layout into final figure
         with util.Timer("FigureWidget"):
             figure = go.FigureWidget(data=self.data, layout=go_layout)
-            if hasattr(self.fe, "test_image"):
-                import plotly.io as pio
-                pio.write_image(figure, self.fe.test_image)
-                print("wrote", self.fe.test_image)
+
+        # if we're in test mode write the image
+        if hasattr(self.fe, "test_image"):
+            import plotly.io as pio
+            pio.write_image(figure, self.fe.test_image)
+            print("wrote", self.fe.test_image)
             
-
-
-
-
         return figure
 
