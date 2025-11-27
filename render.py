@@ -3,6 +3,7 @@ import numpy.linalg as la
 import plotly.graph_objects as go
 import os
 
+import mesh2d
 import util
 
 
@@ -21,7 +22,9 @@ class FigureBuilder:
         self.fe = fe
         self.dim = dim
         self.data = []
+        self.img_array = None
         self.options = options
+        
         
         # rendering options
         self.color = "gray"
@@ -131,33 +134,9 @@ class FigureBuilder:
 
         elif self.dim==2:
 
-            # Bit of a hack. There's no 2d go.Mesh, so we just do
-            # a scatter plot of the points.
-            # TODO: kind of slow in Plotly, so maybe resample to
-            # a 100x100 grid might be faster overall? But kind of low-res...
-
-            # flatten points
-            points = polys if vertices is None else vertices
-            points = points.reshape(-1, 2)
-            #print("xxx points after flattening", points.shape)
-
-            if colors is not None:
-                # flatten colors and stringify
-                colors = colors.reshape(-1, 3)
-                #print("xxx colors after flattening", colors.shape)
-                def to_rgb(color):
-                    args = ",".join(f"{int(c*255)}" for c in color)
-                    return f"rgb({args})"
-                with util.Timer("add_polys to rgb"):
-                    colors = [to_rgb(c) for c in colors]
-                #print("xxx colors after to_rgb", len(colors), type(colors), colors[0], type(colors[0]))
-            else:
-                colors = "black"
-
-            mesh = go.Scatter(
-                x=points[:,0], y=points[:,1],
-                mode='markers', marker=dict(color=colors, size=4),
-            )
+            #mesh = mesh2d.mesh2d_markers(vertices, polys, colors) # 600 ms
+            mesh = mesh2d.mesh2d_opencv(vertices, polys, colors) # 70 ms, but image won't stretch
+            #mesh = mesh2d.mesh2d_3d(vertices, polys, colors) # 60 ms, but not done yet - need to rearrange code wrt layout, axes
 
         self.data.append(mesh)
 
@@ -172,17 +151,17 @@ class FigureBuilder:
                 data = np.hstack([(trace.x, trace.y) for trace in self.data])
             data_range = np.array([np.nanmin(data, axis=1), np.nanmax(data, axis=1)]).T
 
+        plot_range = [s if s is not None else d for s, d in zip(self.options.plot_range, data_range)]
+
         #padding = (data_range[:,1] - data_range[:,0]) * 0.05
         #plot-range = np.array([data_range[:,0] - padding, data_range[:,1] + padding]).T
-
-        plot_range = [s if s is not None else d for s, d in zip(self.options.plot_range, data_range)]
 
         if self.dim == 2:
 
             opts = {}
             for i, p in enumerate("xy"):
                 opts[p+"axis"] = dict(
-                    visible = self.options.axes[i],
+                    visible = self.options.axes[i] or self.options.frame,
                     showspikes = False,
                     ticks="outside",
                     range = self.options.plot_range[i],
@@ -198,6 +177,7 @@ class FigureBuilder:
                 margin = dict(l=0, r=0, t=0, b=0),
                 title=dict(text=""),  # Explicitly set title text to an empty string
                 plot_bgcolor='rgba(0,0,0,0)',
+                autosize=True,
                 width=self.options.image_size[0],
                 height=self.options.image_size[1],
                 **opts
@@ -226,7 +206,7 @@ class FigureBuilder:
             )
             for i, p in enumerate("xyz"):
                 scene[p+"axis"] = dict(
-                    visible = self.options.axes[i],
+                    visible = self.options.axes[i] | self.options.frame,
                     range = plot_range[i],
                     showbackground = False,
                     title = "",
@@ -253,6 +233,10 @@ class FigureBuilder:
                 import plotly.io as pio
                 pio.write_image(figure, self.fe.test_image)
                 print("wrote", self.fe.test_image)
+            
+
+
+
 
         return figure
 

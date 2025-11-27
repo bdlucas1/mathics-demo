@@ -66,6 +66,9 @@ class GraphicsOptions:
         # Axes
         self.axes = get_option("System`Axes", 3)
 
+        # Frame
+        self.frame = get_option("System`Frame")
+
         # ImageSize, AspectRatio
         # TODO: what if anyting to do with returned aspect?
         width, height, multi, aspect = expr._get_image_size(
@@ -103,7 +106,7 @@ class GraphicsOptions:
         coordinates_tool_options = get_option("System`CoordinatesToolOptions")
         epilog = get_option("System`Epilog")
         format_type = get_option("System`FormatType")
-        frame = get_option("System`Frame")
+        #frame = get_option("System`Frame")
         frame_label = get_option("System`FrameLabel")
         frame_style = get_option("System`FrameStyle")
         frame_ticks = get_option("System`FrameTicks")

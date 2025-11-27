@@ -1,0 +1,110 @@
+import util
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+
+
+@util.Timer("mesh2d_opencv")
+def mesh2d_opencv(vertices, polys, colors):
+
+    nx = ny = 200
+    print("xxx nx, ny", nx, ny)
+    print("xxx shapes", vertices.shape, polys.shape, colors.shape)
+
+    # images of requested size
+    img = np.full((nx,ny,3), 0, dtype=np.uint8)
+
+    # scale vertices to nx, ny
+    xs, ys = vertices[...,0], vertices[...,1]
+    x_min, x_max = min(xs), max(xs)
+    y_min, y_max = min(ys), max(ys)
+    xs[...] = (xs - x_min) / (x_max - x_min) * nx
+    ys[...] = (ys - y_min) / (y_max - y_min) * ny
+    
+    # TODO: average poly color instead of vertex 0?
+    colors = colors[polys[:,0],:] * 255
+
+    # expand polys from indices to coordinates
+    # seems not to like fp coordinates though
+    polys = vertices[polys].astype(int)
+
+    # render the polys
+    for poly, color in zip(polys, colors):
+        cv2.fillPoly(img, [poly], color)
+
+    # go.Image doesn't have x, y arrays (unlike other graphic objects)
+    # so we monkey-patch them in because we use it to compute data
+    # range from all the graphic objects later on
+    class Im(go.Image):
+        def __init__(self, x, y, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            object.__setattr__(self, "x", x)
+            object.__setattr__(self, "y", y)
+            
+    # construct our mesh to add to the figure
+    # flip the image because opencv starts y from the top
+    mesh = Im(
+        z=np.flip(img, axis=0),
+        x0=x_min, dx=(x_max-x_min)/nx, x=xs,
+        y0=y_min, dy=(y_max-y_min)/ny, y=ys,
+    )
+
+    return mesh
+
+
+
+@util.Timer("mesh2d_markers")
+def mesh2d_markers(vertices, polys, colors):
+
+        # Bit of a hack. There's no 2d go.Mesh, so we just do
+        # a scatter plot of the points.
+        # TODO: kind of slow in Plotly, so maybe resample to
+        # a 100x100 grid might be faster overall? But kind of low-res...
+
+        # flatten points
+        points = polys if vertices is None else vertices
+        points = points.reshape(-1, 2)
+        #print("xxx points after flattening", points.shape)
+
+        if colors is not None:
+            # flatten colors and stringify
+            colors = colors.reshape(-1, 3)
+            #print("xxx colors after flattening", colors.shape)
+            def to_rgb(color):
+                args = ",".join(f"{int(c*255)}" for c in color)
+                return f"rgb({args})"
+            with util.Timer("add_polys to rgb"):
+                colors = [to_rgb(c) for c in colors]
+            #print("xxx colors after to_rgb", len(colors), type(colors), colors[0], type(colors[0]))
+        else:
+            colors = "black"
+
+        mesh = go.Scatter(
+            x=points[:,0], y=points[:,1],
+            mode='markers', marker=dict(color=colors, size=4),
+        )
+
+        return mesh
+
+@util.Timer("mesh2d_3d")
+def mesh2d_3d(vertices, polys, colors):
+
+        mesh = go.Mesh3d(
+            x=vertices[:,0], y=vertices[:,1], z=np.full(vertices[:,0].shape, 0),
+            i=polys[:,0], j=polys[:,1], k=polys[:,2],
+            #lighting = lighting,
+            lightposition = dict(x=10000, y=10000, z=10000),
+            # TODO: hmm, colorscale is figure-level, isn't it?
+            #showscale=self.options.showscale,
+            #colorscale=self.options.colorscale,
+            #colorbar=dict(thickness=10),
+            #intensity=vertices[:,2],
+            #color = "rgb(1,.72,.3,1)",
+            #color = self.color,
+            vertexcolor = colors,
+            hoverinfo="none"
+        )
+        return mesh
+
+
