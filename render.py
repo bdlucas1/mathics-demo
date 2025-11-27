@@ -130,8 +130,7 @@ class FigureBuilder:
 
             if True:
                 #mesh = mesh2d.mesh2d_markers(vertices, polys, colors) # 600 ms
-                mesh = mesh2d.mesh2d_opencv(vertices, polys, colors, *self.opts.image_size) # 70 ms, but image won't stretch
-                #mesh = mesh2d.mesh2d_3d(vertices, polys, colors) # 60 ms, but not done yet - need to rearrange code wrt layout, axes
+                mesh = mesh2d.mesh2d_opencv(vertices, polys, colors, 200, 200) # 70 ms
                 self.data.append(mesh)
 
             else:

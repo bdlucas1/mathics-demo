@@ -8,10 +8,6 @@ import plotly.graph_objects as go
 @util.Timer("mesh2d_opencv")
 def mesh2d_opencv(vertices, polys, colors, nx=200, ny=200):
 
-    # this matches the default plotpoints so let's just use that
-    nx = ny = 200
-    #nx, ny = int(nx), int(ny)
-
     # images of requested size
     img = np.full((nx,ny,3), 0, dtype=np.uint8)
 
@@ -66,18 +62,15 @@ def mesh2d_markers(vertices, polys, colors):
         # flatten points
         points = polys if vertices is None else vertices
         points = points.reshape(-1, 2)
-        #print("xxx points after flattening", points.shape)
 
         if colors is not None:
             # flatten colors and stringify
             colors = colors.reshape(-1, 3)
-            #print("xxx colors after flattening", colors.shape)
             def to_rgb(color):
                 args = ",".join(f"{int(c*255)}" for c in color)
                 return f"rgb({args})"
             with util.Timer("add_polys to rgb"):
                 colors = [to_rgb(c) for c in colors]
-            #print("xxx colors after to_rgb", len(colors), type(colors), colors[0], type(colors[0]))
         else:
             colors = "black"
 
