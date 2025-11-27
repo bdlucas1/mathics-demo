@@ -9,25 +9,24 @@ import plotly.graph_objects as go
 def mesh2d_opencv(vertices, polys, colors):
 
     nx = ny = 200
-    print("xxx nx, ny", nx, ny)
-    print("xxx shapes", vertices.shape, polys.shape, colors.shape)
 
     # images of requested size
     img = np.full((nx,ny,3), 0, dtype=np.uint8)
 
     # scale vertices to nx, ny
-    xs, ys = vertices[...,0], vertices[...,1]
-    x_min, x_max = min(xs), max(xs)
-    y_min, y_max = min(ys), max(ys)
-    xs[...] = (xs - x_min) / (x_max - x_min) * nx
-    ys[...] = (ys - y_min) / (y_max - y_min) * ny
+    data_xs, data_ys = vertices[...,0], vertices[...,1]
+    x_min, x_max = min(data_xs), max(data_xs)
+    y_min, y_max = min(data_ys), max(data_ys)
+    img_xs = (data_xs - x_min) / (x_max - x_min) * nx
+    img_ys = (y_max - data_ys) / (y_max - y_min) * ny # cv2 is upside down
     
     # TODO: average poly color instead of vertex 0?
     colors = colors[polys[:,0],:] * 255
 
     # expand polys from indices to coordinates
     # seems not to like fp coordinates though
-    polys = vertices[polys].astype(int)
+    img_xys = np.array([img_xs, img_ys]).T
+    polys = img_xys[polys].astype(int)
 
     # render the polys
     for poly, color in zip(polys, colors):
@@ -45,9 +44,9 @@ def mesh2d_opencv(vertices, polys, colors):
     # construct our mesh to add to the figure
     # flip the image because opencv starts y from the top
     mesh = Im(
-        z=np.flip(img, axis=0),
-        x0=x_min, dx=(x_max-x_min)/nx, x=xs,
-        y0=y_min, dy=(y_max-y_min)/ny, y=ys,
+        z=img,
+        x0=x_min, dx=(x_max-x_min)/nx, x=data_xs,
+        y0=y_min, dy=(y_max-y_min)/ny, y=data_ys,
     )
 
     return mesh

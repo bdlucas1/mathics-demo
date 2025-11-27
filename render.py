@@ -128,6 +128,8 @@ class FigureBuilder:
             mesh = mesh2d.mesh2d_opencv(vertices, polys, colors) # 70 ms, but image won't stretch
             #mesh = mesh2d.mesh2d_3d(vertices, polys, colors) # 60 ms, but not done yet - need to rearrange code wrt layout, axes
 
+            
+
         self.data.append(mesh)
 
     @util.Timer("figure")
@@ -141,24 +143,36 @@ class FigureBuilder:
                 data = np.hstack([(trace.x, trace.y) for trace in self.data])
             data_range = np.array([np.nanmin(data, axis=1), np.nanmax(data, axis=1)]).T
 
-        plot_range = [s if s is not None else d for s, d in zip(self.options.plot_range, data_range)]
+        print("xxx options.plot_range", self.options.plot_range)
+        print("xxx data_rangee", data_range)
 
-        #padding = (data_range[:,1] - data_range[:,0]) * 0.05
-        #plot-range = np.array([data_range[:,0] - padding, data_range[:,1] + padding]).T
+        # plot range is either from opt or from data
+        plot_range = [
+            opt if isinstance(opt, list) else data
+            for opt, data in zip(self.options.plot_range, data_range)
+        ]
+
+        axes_opts = {}
+        for i, p in enumerate("xyz" if self.dim==3 else "xy"):
+            opts = dict(
+                linecolor = "black",
+                linewidth = 1 if self.dim==2 else 1.5, # TODO: look again
+                range = plot_range[i],
+                showgrid = False,
+                showline = True,
+                showspikes = False,
+                ticks = "outside",
+                title = None if self.dim==2 else "", # TODO: look again
+                visible = self.options.axes[i] or self.options.frame,
+            )
+            if self.dim == 3:
+                opts |= dict(
+                    showbackground = False,
+                )
+            axes_opts[p+"axis"] = opts
+
 
         if self.dim == 2:
-
-            opts = {}
-            for i, p in enumerate("xy"):
-                opts[p+"axis"] = dict(
-                    visible = self.options.axes[i] or self.options.frame,
-                    showspikes = False,
-                    ticks="outside",
-                    range = self.options.plot_range[i],
-                    linecolor = "black",
-                    linewidth = 1,
-                    title = None,
-                )
 
             layout = go.Layout(
                 margin = dict(l=0, r=0, t=0, b=0),
@@ -167,7 +181,7 @@ class FigureBuilder:
                 autosize=True,
                 width=self.options.image_size[0],
                 height=self.options.image_size[1],
-                **opts
+                **axes_opts
             )
 
         elif self.dim == 3:
@@ -189,21 +203,9 @@ class FigureBuilder:
             scene = dict(
                 aspectmode = "manual",
                 aspectratio = {p: self.options.box_ratios[i] for i, p in enumerate("xyz")},
-                camera = camera
+                camera = camera,
+                **axes_opts
             )
-            for i, p in enumerate("xyz"):
-                scene[p+"axis"] = dict(
-                    visible = self.options.axes[i] | self.options.frame,
-                    range = plot_range[i],
-                    showbackground = False,
-                    title = "",
-                    showline = True,
-                    showgrid = False,
-                    linecolor = "black",
-                    linewidth = 1.5,
-                    showspikes = False,
-                    ticks = "outside",
-                )
             layout = go.Layout(
                 margin = dict(l=0, r=0, t=0, b=0),
                 plot_bgcolor = "red", #'rgba(0,0,0,0)',
