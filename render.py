@@ -90,10 +90,6 @@ class FigureBuilder:
     util.Timer("add_mesh")
     def add_polys(self, vertices, polys, colors):
 
-        #if vertices is not None: print("xxx add_polys got vertices", vertices.shape)
-        #print("xxx add_polys polys", polys.shape)
-        #if colors is not None: print("xxx add_polys colors", colors.shape)
-
         if self.dim==3:
 
             vertices, polys = need_vertices(vertices, polys)
@@ -120,12 +116,6 @@ class FigureBuilder:
                 i=ijks[:,0], j=ijks[:,1], k=ijks[:,2],
                 lighting = lighting,
                 lightposition = dict(x=10000, y=10000, z=10000),
-                # TODO: hmm, colorscale is figure-level, isn't it?
-                #showscale=self.options.showscale,
-                #colorscale=self.options.colorscale,
-                #colorbar=dict(thickness=10),
-                #intensity=vertices[:,2],
-                #color = "rgb(1,.72,.3,1)",
                 color = self.color,
                 vertexcolor = colors,
                 hoverinfo="none"
@@ -168,9 +158,6 @@ class FigureBuilder:
                     linecolor = "black",
                     linewidth = 1,
                     title = None,
-                    #showline = False
-                    #ticks = None
-                    #showticklabels=False
                 )
 
             layout = go.Layout(
