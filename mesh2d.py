@@ -87,25 +87,3 @@ def mesh2d_markers(vertices, polys, colors):
         )
 
         return mesh
-
-@util.Timer("mesh2d_3d")
-def mesh2d_3d(vertices, polys, colors):
-
-        mesh = go.Mesh3d(
-            x=vertices[:,0], y=vertices[:,1], z=np.full(vertices[:,0].shape, 0),
-            i=polys[:,0], j=polys[:,1], k=polys[:,2],
-            #lighting = lighting,
-            lightposition = dict(x=10000, y=10000, z=10000),
-            # TODO: hmm, colorscale is figure-level, isn't it?
-            #showscale=self.options.showscale,
-            #colorscale=self.options.colorscale,
-            #colorbar=dict(thickness=10),
-            #intensity=vertices[:,2],
-            #color = "rgb(1,.72,.3,1)",
-            #color = self.color,
-            vertexcolor = colors,
-            hoverinfo="none"
-        )
-        return mesh
-
-
