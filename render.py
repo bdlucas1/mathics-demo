@@ -94,6 +94,7 @@ class FigureBuilder:
 
             vertices, polys = need_vertices(vertices, polys)
 
+            # TODO: only works well for nearly planar convex polys
             with util.Timer("triangulate"):
                 ijks = []
                 ngon = polys.shape[1]
@@ -103,6 +104,7 @@ class FigureBuilder:
                     ijks.extend(tris)
                 ijks = np.array(ijks)
 
+            # seems to be good default lighting
             lighting = dict(
                 ambient = 0.5,
                 roughness = 0.5,
@@ -118,7 +120,7 @@ class FigureBuilder:
                 lightposition = dict(x=10000, y=10000, z=10000),
                 color = self.color,
                 vertexcolor = colors,
-                hoverinfo="none"
+                hoverinfo = "none"
             )
 
 
@@ -128,9 +130,8 @@ class FigureBuilder:
             mesh = mesh2d.mesh2d_opencv(vertices, polys, colors) # 70 ms, but image won't stretch
             #mesh = mesh2d.mesh2d_3d(vertices, polys, colors) # 60 ms, but not done yet - need to rearrange code wrt layout, axes
 
-            
-
         self.data.append(mesh)
+
 
     @util.Timer("figure")
     def figure(self):
@@ -143,15 +144,13 @@ class FigureBuilder:
                 data = np.hstack([(trace.x, trace.y) for trace in self.data])
             data_range = np.array([np.nanmin(data, axis=1), np.nanmax(data, axis=1)]).T
 
-        print("xxx options.plot_range", self.options.plot_range)
-        print("xxx data_rangee", data_range)
-
-        # plot range is either from opt or from data
+        # get plot range either from opt or from data
         plot_range = [
             opt if isinstance(opt, list) else data
             for opt, data in zip(self.options.plot_range, data_range)
         ]
 
+        # compute axes options
         axes_opts = {}
         for i, p in enumerate("xyz" if self.dim==3 else "xy"):
             opts = dict(
@@ -171,18 +170,21 @@ class FigureBuilder:
                 )
             axes_opts[p+"axis"] = opts
 
+        # compute layout options
+        layout_opts = dict(
+            autosize = True,
+            height = self.options.image_size[1],
+            legend = None,
+            margin = dict(l=0, r=0, t=0, b=0),
+            plot_bgcolor = 'rgba(0,0,0,0)',
+            showlegend = False,
+            title = dict(text=""),  # Explicitly set title text to an empty string
+            width = self.options.image_size[0],
+        )
 
         if self.dim == 2:
 
-            layout = go.Layout(
-                margin = dict(l=0, r=0, t=0, b=0),
-                title=dict(text=""),  # Explicitly set title text to an empty string
-                plot_bgcolor='rgba(0,0,0,0)',
-                autosize=True,
-                width=self.options.image_size[0],
-                height=self.options.image_size[1],
-                **axes_opts
-            )
+            go_layout = go.Layout(**layout_opts, **axes_opts)
 
         elif self.dim == 3:
 
@@ -206,18 +208,10 @@ class FigureBuilder:
                 camera = camera,
                 **axes_opts
             )
-            layout = go.Layout(
-                margin = dict(l=0, r=0, t=0, b=0),
-                plot_bgcolor = "red", #'rgba(0,0,0,0)',
-                width = self.options.image_size[0],
-                height = self.options.image_size[1],
-                scene = scene,
-                showlegend = False,
-                legend = None,
-            )
+            go_layout = go.Layout(**layout_opts, scene = scene)
 
         with util.Timer("FigureWidget"):
-            figure = go.FigureWidget(data=self.data, layout = layout)
+            figure = go.FigureWidget(data=self.data, layout=go_layout)
             if hasattr(self.fe, "test_image"):
                 import plotly.io as pio
                 pio.write_image(figure, self.fe.test_image)
