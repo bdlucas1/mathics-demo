@@ -1,5 +1,9 @@
 <img src="pics/demo-020.png" width="40%"/>  <img src="pics/demo-180.png" width="40%"/>
 
+
+https://github.com/user-attachments/assets/ca7e44e5-f085-4843-a309-eaa406e25454
+
+
 Following instructions assume you have installed a development version of Mathics3, including all relevant PRs.
 If installing pywebview fails, the demo should still run, displaying its output in your system web browser instead
 of in a dedicated pop-up window.
