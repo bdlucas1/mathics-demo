@@ -1,5 +1,6 @@
 __pycache__
 .*
 -.gitignore
-pyodide
+fe_panel_pyodide
+
 

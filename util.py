@@ -91,6 +91,7 @@ class Browser():
             webview.create_window(url, url, x=100+offset, y=100+offset, width=600, height=800)
         elif self.browser == "webbrowser":
             webbrowser.open_new(url)
+        return self
 
     def start(self):
 
@@ -100,6 +101,7 @@ class Browser():
             # real windows will be provided later
             webview.create_window("hidden", hidden=True)
             webview.start()
+        return self
 
 methods = ["CLASSIC", "VECTORIZED"]
 

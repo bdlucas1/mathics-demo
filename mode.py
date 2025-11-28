@@ -39,11 +39,16 @@ if "ipy" in use:
     use_widgets = "ipy"
 elif "dash" in use:
     use_widgets = "dash"
+elif "panel" in use:
+    use_widgets = "panel"
 if use_widgets == "ipy":
     from mode_ipy import *
     requires = ["ipywidgets", "plotly"]
 elif use_widgets == "dash":
     from mode_dash import *
+    requires = []
+elif use_widgets == "panel":
+    from mode_panel import *
     requires = []
 
 # which plotting library to use    
