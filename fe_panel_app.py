@@ -60,6 +60,8 @@ class Pair(pn.Column):
 
         super().__init__(self.input, self.output, css_classes=["m-pair"])
 
+        self.update_if_changed(force=True)
+
     # check whether input has changed, and eval if so
     def update_if_changed(self, force=False):
         expr = self.input.value_input
@@ -94,19 +96,21 @@ def shortcut_msg(event):
         update_changed(force=True)
 shortcuts.on_msg(shortcut_msg)
 
+import pandas
+
 # initial files from command line
 def initial_pairs():
+    time.sleep(1)
     for fn in sys.argv[1:]:
+        print("=== processing", fn)
         with open(fn) as f:
             expr = f.read()
+            expr = f"(* {fn.split("/")[-1]} *)\n" + expr
             pair = Pair(expr)
             pairs.append(pair)
-#threading.Thread(target=initial_pairs).start()
-initial_pairs()
+    pairs.append(Pair())
+threading.Thread(target=initial_pairs).start()
+#initial_pairs()
         
-update_changed()
-
-pairs.append(Pair())
-
-app = pn.Column( pairs, shortcuts)
+app = pn.Feed(pairs, shortcuts, view_latest=True, css_classes=["m-top"])
 app.servable()

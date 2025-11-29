@@ -10,9 +10,15 @@ body {
     /*width: 35em;*/
 }
 
+.m-top {
+    width: 100%;
+    height: 100%;
+}
+
 .m-pairs {
     gap: 1em;
     width: 100%;
+    height: 100%;
 }
 
 .m-pair {
