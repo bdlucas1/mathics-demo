@@ -90,28 +90,11 @@ shortcuts = mode.KeyboardShortcuts(shortcuts=[
 ])
 
 def shortcut_msg(event):
-    print("xxx shortcut_msg got", event, event.data)
     if event.data == "run":
         update_changed()
     if event.data == "run_force":
         update_changed(force=True)
 shortcuts.on_msg(shortcut_msg)
 
-import pandas
-
-# initial files from command line
-def initial_pairs():
-    time.sleep(1)
-    for fn in sys.argv[1:]:
-        print("=== processing", fn)
-        with open(fn) as f:
-            expr = f.read()
-            expr = f"(* {fn.split("/")[-1]} *)\n" + expr
-            pair = Pair(expr)
-            pairs.append(pair)
-    pairs.append(Pair())
-#threading.Thread(target=initial_pairs).start()
-initial_pairs()
-        
 app = pn.Feed(pairs, shortcuts, view_latest=True, css_classes=["m-top"])
 app.servable()
