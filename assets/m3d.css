@@ -1,0 +1,18 @@
+.m3d-markdown:host {
+    /*font-family: 'Times New Roman', serif;*/
+    /*font-size: 20pt;*/
+}
+
+/*
+* {
+    font-size: 20pt !important;
+}
+*/
+
+.m3d-app {
+    gap: 1em;
+}
+
+.m3d-markdown * {
+    font-size: 20pt;
+}

@@ -1,0 +1,26 @@
+Let's start with a simple sine wave, $$\sin x^2$$.
+
+```
+Plot[Sin[x], {x, 0, 2 Pi}]
+```
+Add some sliders to vary the frequency and amplitude:
+
+```
+Manipulate[
+    Plot[a Sin[f x], {x, 0, 2 Pi}, PlotRange -> {Automatic, {-2,2}}],
+    {{f,1}, 0, 2},
+    {{a,1}, -2, 2}
+]
+```
+
+Now lets do it in 3d.
+
+```
+Manipulate[
+    Plot3D[a Sin[f x] Cos[f y], {x, 0, 2 Pi}, {y, 0, 2 Pi},
+    PlotRange -> {Automatic, Automatic, {-2,2}}],
+    {{f,1}, 0, 2},
+    {{a,1}, -2, 2}
+]
+```
+
