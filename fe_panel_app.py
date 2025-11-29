@@ -22,6 +22,8 @@ import mode
 
 #pn.extension('ipywidgets')
 pn.extension('plotly')
+pn.extension('mathjax')
+
 
 # start mathics session
 #expr = session.parse("Plot3D[Cos[x] Sin[y], {x,0,4 Pi}, {y,0, 6 Pi}]")
@@ -72,7 +74,6 @@ class Pair(pn.Column):
             layout = lt.expression_to_layout(fe, expr)
             self[1] = layout
 
-
 pairs = pn.Column(css_classes=["m-pairs"])
 
 def update_changed(force=False):
@@ -109,8 +110,8 @@ def initial_pairs():
             pair = Pair(expr)
             pairs.append(pair)
     pairs.append(Pair())
-threading.Thread(target=initial_pairs).start()
-#initial_pairs()
+#threading.Thread(target=initial_pairs).start()
+initial_pairs()
         
 app = pn.Feed(pairs, shortcuts, view_latest=True, css_classes=["m-top"])
 app.servable()

@@ -13,17 +13,13 @@ with open("assets/app_panel.css") as f:
 pn.extension(raw_css=[css])
 
 
-# --- Basic wrappers ----------------------------------------------------------
-
 def wrap(s):
     return pn.widgets.StaticText(value=s)
 
 
 def latex(s):
-    """Replace ipw.Label(value='$...$') with a LaTeX pane."""
     if isinstance(s, str):
-        # Panel's LaTeX pane renders math, no need to add $...$ unless you want inline explicitly
-        return pn.pane.LaTeX(s)
+        return pn.pane.LaTeX(f"${s}$")
     return s
 
 
