@@ -188,7 +188,6 @@ class FigureBuilder:
 
         # compute layout options
         layout_opts = dict(
-            autosize = True,
             height = self.opts.image_size[1],
             legend = None,
             margin = dict(l=0, r=0, t=0, b=0),
@@ -239,6 +238,7 @@ class FigureBuilder:
         # combine data and g_layout into final figure
         with util.Timer("FigureWidget"):
             figure = go.FigureWidget(data=self.data, layout=go_layout)
+        #print("xxx figure", figure)
 
         # if we're in test mode write the image
         if hasattr(self.fe, "test_image"):

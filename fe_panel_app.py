@@ -2,11 +2,13 @@ import os
 os.environ["DEMO_USE"] = "panel"
 os.environ["MATHICS3_TIMING"] = "-1"
 
+import threading
+
 import panel as pn
 import panel.widgets as pnw
 import plotly.express as px
 import plotly.graph_objects as go
-#import ipywidgets as ipw
+import param
 
 import core
 import sym
@@ -16,6 +18,7 @@ import util
 import hook
 import sys
 import time
+import mode
 
 #pn.extension('ipywidgets')
 pn.extension('plotly')
@@ -32,58 +35,78 @@ class FE:
 
 fe = FE()
 
-class Pair:
+#help(pn.widgets.TextAreaInput)
+
+class Pair(pn.Column):
 
     def __init__(self, text=None):
         
+        self.old_expr = ""
+
         # input
-        self.text_input = pn.widgets.TextInput(
-            placeholder = "Enter expression",
-            value = text
+        instructions = "Type expression followed by shift-enter"
+        self.input = pn.widgets.TextAreaInput(
+            placeholder = instructions,
+            value = text,
+            value_input = text,
+            auto_grow = True,
+            max_rows = 9999,
+            #sizing_mode = "stretch_width",
+            css_classes = ["m-input"]
         )
 
         # output
-        #self.output_pane = pn.pane.IPyWidget(ipw.HBox(), height=400)
-        self.output_pane = pn.Column()
+        self.output = pn.Column(css_classes = ["m-output"])
 
-        # parse and eval expr, and display it in output_pane
-        def process_input(expr):
+        super().__init__(self.input, self.output, css_classes=["m-pair"])
+
+    # check whether input has changed, and eval if so
+    def update_if_changed(self, force=False):
+        expr = self.input.value_input
+        if expr and (force or expr != self.old_expr):
+            self.old_expr = expr
             expr = fe.session.parse(expr)
             expr = expr.evaluate(fe.session.evaluation)
             layout = lt.expression_to_layout(fe, expr)
-            print("xxx layout", layout)
-            #self.output_pane[0] = layout
-            self.pair[1] = pn.Column(layout)
-
-        # receive input and update output
-        def update_plot(event):
-            expr = self.text_input.value
-            process_input(expr)
-        self.text_input.param.watch(update_plot, "value")
-
-        # bundle them
-        self.pair = pn.Column(self.text_input, self.output_pane)
-
-        # process initial text
-        if text:
-            process_input(text)
+            self[1] = layout
 
 
+pairs = pn.Column(css_classes=["m-pairs"])
 
-app = pn.Column()
+def update_changed(force=False):
+    for pair in pairs:
+        pair.update_if_changed(force=force)
 
-if __name__ == "__main__":
+shortcuts = mode.KeyboardShortcuts(shortcuts=[
+    mode.KeyboardShortcut(name="run", key="Enter", ctrlKey=True),
+    mode.KeyboardShortcut(name="run", key="Enter", altKey=True),
+    mode.KeyboardShortcut(name="run", key="Enter", metaKey=True),
+    mode.KeyboardShortcut(name="run_force", key="Enter", ctrlKey=True, shiftKey=True),
+    mode.KeyboardShortcut(name="run_force", key="Enter", altKey=True, shiftKey=True),
+    mode.KeyboardShortcut(name="run_force", key="Enter", metaKey=True, shiftKey=True),
+])
 
-    # initial files from command line
+def shortcut_msg(event):
+    print("xxx shortcut_msg got", event, event.data)
+    if event.data == "run":
+        update_changed()
+    if event.data == "run_force":
+        update_changed(force=True)
+shortcuts.on_msg(shortcut_msg)
+
+# initial files from command line
+def initial_pairs():
     for fn in sys.argv[1:]:
         with open(fn) as f:
             expr = f.read()
-        pair = Pair(expr)
-        app.append(pair.pair)
+            pair = Pair(expr)
+            pairs.append(pair)
+#threading.Thread(target=initial_pairs).start()
+initial_pairs()
+        
+update_changed()
 
-    #app.show(port=9999)
+pairs.append(Pair())
 
-if len(app) == 0:
-    app.append(Pair().pair)
-
+app = pn.Column( pairs, shortcuts)
 app.servable()

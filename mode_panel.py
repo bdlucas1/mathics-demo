@@ -1,27 +1,21 @@
 import time
 import panel as pn
+import panel.io
+import itertools
 
 import layout as lt
 import mode
 import util
 
-# --- Load CSS (Panel way instead of IPython.display) -------------------------
-
-try:
-    with open("assets/app.css") as f:
-        css = f.read()
-except FileNotFoundError:
-    with open("app.css") as f:
-        css = f.read()
-
-# Register CSS with Panel
+# style sheet css
+with open("assets/app_panel.css") as f:
+    css = f.read()
 pn.extension(raw_css=[css])
 
 
 # --- Basic wrappers ----------------------------------------------------------
 
 def wrap(s):
-    """Replace ipw.Label(value=s)"""
     return pn.widgets.StaticText(value=s)
 
 
@@ -42,8 +36,6 @@ def row(ls):
     # Panel doesn't have "align_items='baseline'" directly, but Row is the closest equivalent
     return pn.Row(*items)
 
-
-# --- Grid layout -------------------------------------------------------------
 
 def grid(grid_content):
     """
@@ -75,13 +67,8 @@ def grid(grid_content):
     return layout
 
 
-# --- Graph layout (Plotly, etc.) --------------------------------------------
-
 def graph(figure, height):
-    """
-    Replace ipw.HBox + spacer with Panel Plotly pane.
-    Expects `figure` to be a Plotly figure or similar.
-    """
+
     # Turn off the mode bar like your original code did
     plot = pn.pane.Plotly(figure, config={"displayModeBar": False}, height=int(height))
 
@@ -92,66 +79,150 @@ def graph(figure, height):
     return layout
 
 
-# --- Manipulate (sliders + target layout) ------------------------------------
-
-last_slider_update = None
-
 def manipulate(init_target_layout, sliders, eval_and_layout):
-    """
-    Panel version of `manipulate`:
 
-    - `init_target_layout`: initial Panel layout (or anything Panel can panelize)
-    - `sliders`: iterable of objects with attrs: name, lo, hi, step, init
-    - `eval_and_layout(values)`: function taking list of slider values and
-      returning a new layout (Panel object) to replace the target.
-    """
-
-    # We'll create Panel FloatSliders for each descriptor
-    pn_sliders = []
-
-    def recompute(event=None):
-        global last_slider_update
-
-        if last_slider_update:
-            # same place you had timing; uncomment if you want the print
-            # print(f"between slider updates: {(time.time()-last_slider_update)*1000:.1f}")
-            pass
-
+    # didn't seem effective
+    #@panel.io.hold()
+    def update(event=None):
         with util.Timer("slider update"):
-            # Get current slider values
             values = [s.value for s in pn_sliders]
             target_layout = eval_and_layout(values)
-            # Replace the contents of the target container
             target[:] = [target_layout]
 
-        last_slider_update = time.time()
 
-    # Build sliders
-    for s in sliders:
+    # build sliders
+    pn_sliders = []
+    cells = []    
+    def add_slider(s):
+        label = pn.pane.Str(s.name)
         slider = pn.widgets.FloatSlider(
-            name=s.name,
+            name="",
             start=s.lo,
             end=s.hi,
             step=s.step / 10,
             value=s.init,
-            width_policy="max",  # similar to layout=ipw.Layout(width="100%")
+            show_value=False,
+            sizing_mode="stretch_width"
         )
-        # Watch changes to "value"
-        slider.param.watch(recompute, "value")
+        readout = pn.widgets.StaticText(value=f"{slider.value:.2f}")
+
+        # keep target in sync with slider
+        slider.param.watch(update, "value")
+
+        # keep readout in sync with slider
+        def update_readout(event):
+            readout.value = f"{event.new:.2f}"
+        slider.param.watch(update_readout, "value")
+
+        # add to grid
+        cells.extend([label, slider, readout])
         pn_sliders.append(slider)
 
-    slider_box = pn.Column(*pn_sliders)
-    slider_box.css_classes = ["m-sliders"]
+    for s in sliders:
+        add_slider(s)
 
-    # Target layout container (we'll mutate its contents)
+    grid = pn.GridBox(
+        *cells,
+        ncols=3,
+        sizing_mode="stretch_width",
+        css_classes=["m-sliders"],
+    )
+
+    # target layout container (we'll mutate its contents)
     target = pn.Column(init_target_layout)
 
-    # Main layout: target on top, sliders below
+    # main layout: target on top, sliders below
     layout = pn.Column(
         target,
-        slider_box,
-        width_policy="min",  # similar intention to width="min-content"
+        grid,
+        width_policy="min",
+        css_classes = ["m-manipulate"]
     )
-    layout.css_classes = ["m-manipulate"]
 
     return layout
+
+
+#
+# Following code is from https://github.com/holoviz/panel/issues/3193
+#
+
+from typing import TypedDict, NotRequired
+from panel.custom import ReactComponent, DataEvent
+import param
+import panel as pn
+
+
+# Note: this uses TypedDict instead of Pydantic or dataclass because Bokeh/Panel doesn't seem to
+# like serializing custom classes to the frontend (and I can't figure out how to customize that).
+class KeyboardShortcut(TypedDict):
+    name: str
+    key: str
+    altKey: NotRequired[bool]
+    ctrlKey: NotRequired[bool]
+    metaKey: NotRequired[bool]
+    shiftKey: NotRequired[bool]
+
+
+class KeyboardShortcuts(ReactComponent):
+    """
+    Class to install global keyboard shortcuts into a Panel app.
+
+    Pass in shortcuts as a list of KeyboardShortcut dictionaries, and then handle shortcut events in Python
+    by calling `on_msg` on this component. The `name` field of the matching KeyboardShortcut will be sent as the `data`
+    field in the `DataEvent`.
+
+    Example:
+    >>> shortcuts = [
+        KeyboardShortcut(name="save", key="s", ctrlKey=True),
+        KeyboardShortcut(name="print", key="p", ctrlKey=True),
+    ]
+    >>> shortcuts_component = KeyboardShortcuts(shortcuts=shortcuts)
+    >>> def handle_shortcut(event: DataEvent):
+            if event.data == "save":
+                print("Save shortcut pressed!")
+            elif event.data == "print":
+                print("Print shortcut pressed!")
+    >>> shortcuts_component.on_msg(handle_shortcut)
+    """
+
+    # bdl - following failed, but my change works
+    #shortcuts = param.List(class_=dict)
+    shortcuts = param.List()
+
+    _esm = """
+    // Hash a shortcut into a string for use in a dictionary key (booleans / null / undefined are coerced into 1 or 0)
+    function hashShortcut({ key, altKey, ctrlKey, metaKey, shiftKey }) {
+      return `${key}.${+!!altKey}.${+!!ctrlKey}.${+!!metaKey}.${+!!shiftKey}`;
+    }
+
+    export function render({ model }) {
+      const [shortcuts] = model.useState("shortcuts");
+
+      const keyedShortcuts = {};
+      for (const shortcut of shortcuts) {
+        keyedShortcuts[hashShortcut(shortcut)] = shortcut.name;
+      }
+
+      function onKeyDown(e) {
+        const name = keyedShortcuts[hashShortcut(e)];
+        //console.log(e, name)
+        if (name) {
+          e.preventDefault();
+          e.stopPropagation();
+          model.send_msg(name);
+          return;
+        }
+      }
+
+      /* bdl: I added capture:true */
+      React.useEffect(() => {
+        window.addEventListener('keydown', onKeyDown, {capture: true});
+        return () => {
+          window.removeEventListener('keydown', onKeyDown);
+        };
+      });
+
+      return <></>;
+    }
+    """
+
