@@ -1,18 +1,12 @@
-.m3d-markdown:host {
-    /*font-family: 'Times New Roman', serif;*/
-    /*font-size: 20pt;*/
+body {
+    max-width: 600px;
 }
-
-/*
-* {
-    font-size: 20pt !important;
-}
-*/
 
 .m3d-app {
-    gap: 1em;
+    gap: 1.5em;
 }
 
-.m3d-markdown * {
-    font-size: 20pt;
+.bk-TablerIcon {
+    font-size: 20px;
 }
+
