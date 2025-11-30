@@ -64,6 +64,7 @@ def create_app(load):
         md_fn = sys.argv[1] if len(sys.argv) > 1 else "gallery.m3d"
         print("loading", md_fn)
         md_str = open(md_fn).read()
+        # TODO: allow for tags or instructions after ``` until end of line
         md_parts = re.split("(```)", md_str)
         is_m3 = False
         for part in md_parts:
@@ -71,7 +72,6 @@ def create_app(load):
                 is_m3 = not is_m3
             elif is_m3:
                 expr = fe.session.parse(part)
-                print(expr)
                 layout = lt.expression_to_layout(fe, expr)
                 app.append(layout)
             else:
