@@ -65,25 +65,38 @@ def grid(grid_content):
 
 def graph(figure, height):
 
-    # Turn off the mode bar like your original code did
-    plot = pn.pane.Plotly(figure, config={"displayModeBar": False}, height=int(height))
+    # just directly return the figure so manipulate can wrap it
+    # in a Plotly pane, which gives much more efficient updates
+    return figure
 
-    # Spacer to roughly reproduce the baseline centering trick
-    center_baseline = pn.Spacer(width=0, height=int(height / 2))
+    # TODO: do we still want to do this somehow? maybe not?
+    #plot = pn.pane.Plotly(figure, config={"displayModeBar": False}, height=int(height))
 
-    layout = pn.Row(center_baseline, plot)
-    return layout
+    # TODO: look into plot baseline alignment
+    #center_baseline = pn.Spacer(width=0, height=int(height / 2))
+    #layout = pn.Row(center_baseline, plot)
+    #return layout
 
 
 def manipulate(init_target_layout, sliders, eval_and_layout):
 
-    # didn't seem effective
-    #@panel.io.hold()
+    update_requested = False
+
     def update(event=None):
-        with util.Timer("slider update"):
-            values = [s.value for s in pn_sliders]
-            target_layout = eval_and_layout(values)
-            target[:] = [target_layout]
+        nonlocal update_requested
+        if update_requested:
+            update_requested = False
+            with util.Timer("slider update"):
+                values = [s.value for s in pn_sliders]
+                target_layout = eval_and_layout(values)
+                #target[0] = target_layout
+                target.object = target_layout
+
+    def request_update(event):
+        nonlocal update_requested
+        update_requested = True
+
+    timer = pn.state.add_periodic_callback(update, period=100)
 
 
     # build sliders
@@ -95,7 +108,7 @@ def manipulate(init_target_layout, sliders, eval_and_layout):
             name="",
             start=s.lo,
             end=s.hi,
-            step=s.step / 10,
+            step=s.step,
             value=s.init,
             show_value=False,
             sizing_mode="stretch_width"
@@ -103,7 +116,7 @@ def manipulate(init_target_layout, sliders, eval_and_layout):
         readout = pn.widgets.StaticText(value=f"{slider.value:.2f}")
 
         # keep target in sync with slider
-        slider.param.watch(update, "value")
+        slider.param.watch(request_update, "value")
 
         # keep readout in sync with slider
         def update_readout(event):
@@ -125,7 +138,8 @@ def manipulate(init_target_layout, sliders, eval_and_layout):
     )
 
     # target layout container (we'll mutate its contents)
-    target = pn.Column(init_target_layout)
+    #target = pn.Column(init_target_layout)
+    target = pn.pane.Plotly(init_target_layout)
 
     # main layout: target on top, sliders below
     layout = pn.Column(

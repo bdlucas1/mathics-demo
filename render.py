@@ -237,7 +237,7 @@ class FigureBuilder:
 
         # combine data and g_layout into final figure
         with util.Timer("FigureWidget"):
-            figure = go.FigureWidget(data=self.data, layout=go_layout)
+            figure = go.Figure(data=self.data, layout=go_layout)
         #print("xxx figure", figure)
 
         # if we're in test mode write the image
